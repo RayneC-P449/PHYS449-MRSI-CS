@@ -1,0 +1,16 @@
+addpath(genpath("../FID-A-master"))
+
+
+n          = 2048;        % points
+sw         = 2000;        % Hz
+Bfield     = 3;           % Tesla
+linewidth  = 2;           % Hz
+load spinSystems
+sys=eval(['sys' spinSys]);
+
+TE   = 30e-3;             % 30 ms in seconds
+tau1 = TE/4;              % PRESS definition
+tau2 = TE/4;
+
+w = sim_press(n, sw, Bfield, linewidth, sys, tau1, tau2);
+
