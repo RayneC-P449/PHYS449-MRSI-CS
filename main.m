@@ -22,5 +22,5 @@ seq_params.sys = 0;
 TE   = 30e-3;  
 seq_params.tau1 = TE/4;             
 seq_params.tau2 = TE/4;
-voxrange = [24, 1, 1];
+voxrange = [4, 1, 1];
 signal = sm.extract_signal(phantom,@sim_press,seq_params, voxrange);

@@ -29,9 +29,9 @@ classdef SignalModel
                    phase_x = squeeze(kx(vx) * x);
                    for l = 1:1
                        basis_fid = reshape(bases{l}.fids, 1, 1, []);
-                       temp = phantom.data(:,:,nz,l,1);
-                       temp = temp .* exp(1i*2*pi*phase_x.');
-                       s = temp .* basis_fid;
+                       disp(size(phantom.data(:,:,nz,l,1)));
+                       
+                       s = phantom.data(:,:,nz,l,1) .* basis_fid;
                        s = sum(sum(s,1),2);
                        s = squeeze(s);
                        s = reshape(s, 1, 1, 1, []);
@@ -43,8 +43,8 @@ classdef SignalModel
            
            % plot(bases{1}.ppm, abs(bases{1}.specs));
            % figure(2);
-           % plot(bases{1}.ppm, abs(flip(fftshift(fft(squeeze(signal(1,1,1,:))))))/1024);
-           disp(size(signal));
+           plot(bases{1}.ppm, abs(flip(fftshift(fft(squeeze(signal(1,1,1,:))))))/1024);
+          
         
            
       
