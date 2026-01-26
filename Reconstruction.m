@@ -21,9 +21,9 @@ classdef Reconstruction
             cg_iters = 10;
             b = C_adj(ku);
             for n = 1:niter
-                % Use conjugate gradient method to optimize Lagrangian
+                % use conjugate gradient method to optimize Lagrangian
                 rhs = b + rho * T_adj(z - u);
-                s = pcg(@(v) normal_eq(v, C, C_adj, T, T_adj, rho), rhs, ...
+                s = pcg(@(v) C_adj(C(v)) + rho * T_adj(T(v)), rhs, ...
                         1e-6, cg_iters, [], [], s);
                 Ts = T(s);
                 z = sign(Ts + u) .* max(abs(Ts + u) - lambda / rho, 0);
