@@ -5,6 +5,10 @@ classdef Phantom < handle
       data
    end
    methods
+       % Function for constructing the digital phantom based on
+       % concentration and T2 data from 
+       % https://github.com/dennisvds/MRS-Digital-Phantom/tree/main/data/metabolites
+       % and MRILab's tissue label map.
        function phantom = Phantom(cfg)
          if nargin > 0
             phantom.labels = niftiread(cfg.labels_path);
