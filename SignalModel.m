@@ -34,14 +34,20 @@ classdef SignalModel
                bases{l} = basis;
            end
            [Nx, Ny, Nz] = size(phantom.labels);
-           x = 0:Nx-1; kx = 0:voxrange(1)-1;
-           y = 0:Ny-1; ky = 0:voxrange(2)-1;
+           x = linspace(-0.5, 0.5, Nx); kx = linspace(-0.5, 0.5, voxrange(1));
+           if voxrange(1) == 1
+               kx = zeros(1,1);
+           end
+           y = linspace(-0.5, 0.5, Ny); ky = linspace(-0.5, 0.5, voxrange(2));
+           if voxrange(2) == 1
+               ky = zeros(1,1);
+           end
            % Simulate phase encoding steps with voxrange(1) steps in 
            % x-direction and voxrange(2) steps in y-direction
            for vx = 1:voxrange(1)
                for vy = 1:voxrange(2)
-                   phase_x = squeeze(kx(vx) * x / Nx);
-                   phase_y = squeeze(ky(vy) * y / Ny);
+                   phase_x = squeeze(kx(vx) * x);
+                   phase_y = squeeze(ky(vy) * y);
                    for l = 1:numel(phantom.metabs_list)
                        basis_fid = reshape(bases{l}.fids, 1, 1, []);
                        for sc = zslice
