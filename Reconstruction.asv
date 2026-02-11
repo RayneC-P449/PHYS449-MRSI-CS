@@ -9,26 +9,27 @@ classdef Reconstruction
         % Sparse 2D spatial CS reconstruction from proposal
         % Implementation of ADMM based on 
         % https://www.stat.cmu.edu/~ryantibs/convexopt/lectures/admm.pdf
-        % with constraint Ts = z (where x is s here and so A = T, B = -1)
-        function S_cs = sparse_reconstruct_admm(~, ku, mask, T, T_adj, lambda, rho, niter)
-            % TODO: write C and C_adj using wrappers for ffts that work on vectors 
-            % (i.e. flattened k-space or metabolite mappings)
-            C  = @(s) mask .* fft2(s);
-            C_adj = @(k) ifft2(mask .* k);
-            s = ifft2(ku);              
-            z = T(s);
-            u = zeros(size(z));
-            cg_iters = 10;
-            b = C_adj(ku);
+        function S_cs, f_val, g_val = sparse_reconstruct_admm(~, Ku, mask, psi, psi_adj, lambda, rho, niter)
+            s = ifftn(Ku);
+            z = psi(s);
+            w = zeros(size(z));
             for n = 1:niter
-                % Use conjugate gradient method to optimize Lagrangian
-                rhs = b + rho * T_adj(z - u);
-                s = pcg(@(v) AT(A(v)) + rho * T_adj(T(v)), rhs, ...
-                        1e-6, cg_iters, [], [], s);
-                Ts = T(s);
-                z = sign(Ts + u) .* max(abs(Ts + u) - lambda / rho, 0);
-                u = u + rho*(Ts - z);
+                % s_update
+                b = lambda * ifftn(Ku) + rho * psiH(z - w);  
+                b = b(:);
+                A = @(s) reshape(lambda * ifftn(mask .* fftn(s) + rho * psi_adj(psi(reshape(s, size(Ku)))), [], 1);
+                s = pcg(A, b, 1e-6, 50);
+                s = reshape(s, size(Ku));
+                % z_update
+                z = wthresh(psi(x)+w, 's', 1/rho);
+                % w_update
+                w = w+psi(s)-z;
             end
+            g = @(z) norm(z, 1);
+            f = @(s) 0.5*lambda*norm(reshape(mask .* fftn(s)-Ku, [], 1), 2)^2;
+            S_cs = s;
+            f_val = f(s);
+            g_val = g(z);
         end
     end
 end

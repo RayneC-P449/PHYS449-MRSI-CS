@@ -11,9 +11,9 @@ classdef Phantom < handle
        % and MRILab's tissue label map.
        function phantom = Phantom(cfg)
          if nargin > 0
-            phantom.labels = niftiread(cfg.labels_path);
+            phantom.labels = cfg.labels;
             phantom.metabs_list = cfg.metabs_list;
-            metabs_df = readtable(cfg.metabs_path);
+            metabs_df = cfg.metabs;
             [I, J, K] = size(phantom.labels);
             L = numel(cfg.metabs_list);
             M = 3;

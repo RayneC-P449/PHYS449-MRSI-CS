@@ -1,5 +1,5 @@
 classdef Undersampling
-       properties    
+   properties    
       
    end
    methods
