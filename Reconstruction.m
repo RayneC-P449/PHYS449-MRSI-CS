@@ -6,30 +6,60 @@ classdef Reconstruction
         function obj = Reconstruction()
 
         end
-        % Sparse 2D spatial CS reconstruction from proposal
         % Implementation of ADMM based on 
         % https://www.stat.cmu.edu/~ryantibs/convexopt/lectures/admm.pdf
-        function S_cs, f_val, g_val = sparse_reconstruct_admm(obj, Ku, mask, psi, psi_adj, lambda, rho, niter)
-            s = ifftn(Ku);
-            z = psi(s);
-            w = zeros(size(z));
-            for n = 1:niter
-                % s_update
-                b = lambda * ifftn(Ku) + rho * psi_adj(z - w);  
-                b = b(:);
-                A = @(v) reshape(lambda * ifftn(mask .* fftn(reshape(v, size(Ku)))) + rho * psi_adj(psi(reshape(v, size(Ku)))), [], 1);
-                s = pcg(A, b, 1e-6, 50);
-                s = reshape(s, size(Ku));
-                % z_update
-                z = wthresh(psi(s)+w, 's', 1/rho);
-                % w_update
-                w = w+psi(s)-z;
-            end
-            g = @(z) norm(z, 1);
+        % Sparse version followed by low-rank version
+        function [S_cs, f_val, g_val] = sparse_reconstruct(obj, Ku, mask, psi, psi_adj, lambda, rho, niter, atol)
             f = @(s) 0.5*lambda*norm(reshape(mask .* fftn(s)-Ku, [], 1), 2)^2;
+            g = @(v) norm(v, 1);
+            s = ifftn(Ku);
+            v = psi(s);
+            w = zeros(size(v));
+            for n = 1:niter
+                % s update
+                b = lambda * ifftn(Ku) + rho * psi_adj(v - w);  
+                b = b(:);
+                A = @(a) reshape(lambda * ifftn(mask .* fftn(reshape(a, size(Ku)))) + rho * psi_adj(psi(reshape(a, size(Ku)))), [], 1);
+                s = pcg(A, b, 1e-6, 50, [], [], s);   % Conjugate gradient run
+                s = reshape(s, size(Ku));
+                % v update
+                v = wthresh(psi(s)+w, 's', 1/rho);
+                if f(s) + g(v) < atol
+                    break;
+                end
+                % w update
+                w = w+psi(s)-v;
+            end
             S_cs = s;
             f_val = f(s);
-            g_val = g(z);
+            g_val = g(v);
+        end
+        function [K_cs, f_val, g_val] = rank_reconstruct(obj, Ku, mask, psi, psi_adj, lambda, rho, niter, atol)            
+            % TODO: add tolerance check
+            for jx = 1:size(Ku, 1)
+                for jy = 1:size(Ku, 2)
+                    for jz = 1:size(Ku, 3)
+                        ku = Ku(jx,jy,jz,:);
+                        kj = ku;
+                        vj = psi(kj);
+                        wj = zeros(size(vj));
+                        ku = ku(:); kj = kj(:); vj = vj(:); wj = wj(:);
+                        for n = 1:niter
+                            % kj update                            
+                            b = lambda * ku + rho * psi_adj(vj - wj);  
+                            b = b(:);
+                            A = @(a) lambda * mask .* a + rho * psi_adj(psi(a));
+                            kj = pcg(A, b, 1e-6, 50, [], [], kj);
+                            % vj update
+                            [U,S,V] = svd(psi(kj) + wj,'econ');
+                            S_thresh = max(S - 1/rho, 0);
+                            vj = U * S_thresh * V'; 
+                            % wj update
+                            wj = wj + psi(kj) - vj;
+                        end
+                    end
+                end
+            end
         end
     end
 end

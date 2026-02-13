@@ -28,8 +28,9 @@ classdef Phantom < handle
                 end
             end
             phantom.data = zeros(I,J,K,L,M);
+            labelings = [3,2]; % To make the dataframe data and the MRILab labelings match
             for label = 1:2
-                mask = (phantom.labels == label);
+                mask = (phantom.labels == labelings(label));
                 temp = reshape(phantom.data, [], L, M);
                 temp(mask(:), :, :) = repmat(metabs(label,:,:), nnz(mask),1,1);
                 phantom.data = reshape(temp, size(phantom.data));

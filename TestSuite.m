@@ -9,6 +9,7 @@ classdef TestSuite
             cfg.labels = niftiread('data/skeleton/labels.nii');
             yslice = 50:59;
             cfg.labels = cfg.labels(60, yslice, 131);
+
             cfg.metabs_list = ["NAA","NAAG","Cr","PCr"]; % short version for fast runs
             % cfg.metabs_list = ["NAA","NAAG","Cr","PCr","GPC","PCh", ...
             %         "Glu","Gln","GABA","GSH","Asp","Tau","PE", "Lac"];
