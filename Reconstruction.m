@@ -6,9 +6,6 @@ classdef Reconstruction
         function obj = Reconstruction()
 
         end
-        % Implementation of ADMM based on 
-        % https://www.stat.cmu.edu/~ryantibs/convexopt/lectures/admm.pdf
-        % Sparse version followed by low-rank version
         function [S_cs, f_val, g_val] = sparse_reconstruct(obj, Ku, mask, psi, psi_adj, lambda, rho, niter, atol)
             f = @(s) 0.5*lambda*norm(reshape(mask .* fftn(s)-Ku, [], 1), 2)^2;
             g = @(v) norm(v, 1);
@@ -35,7 +32,6 @@ classdef Reconstruction
             g_val = g(v);
         end
         function [K_cs, f_val, g_val] = rank_reconstruct(obj, Ku, mask, psi, psi_adj, lambda, rho, niter, atol)            
-            % TODO: add tolerance check
             for jx = 1:size(Ku, 1)
                 for jy = 1:size(Ku, 2)
                     for jz = 1:size(Ku, 3)

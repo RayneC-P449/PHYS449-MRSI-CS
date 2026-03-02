@@ -1,0 +1,65 @@
+classdef SignalModel
+   properties    
+      
+   end
+   methods
+       function sm = SignalModel()
+
+       end
+       function [kspace, t, imspace, ppm] = extract_kspace(obj, phantom, seq_func, seq_params, params_order, zslice, voxrange, sigma)
+           kspace_dims = [voxrange, seq_params.n];
+           kspace = zeros(kspace_dims);
+           metab_bases = {};
+           load spinSystems
+           for l=1:numel(phantom.metabs_list)
+               metab = phantom.metabs_list(l);
+               seq_params.sys = eval(['sys' char(metab)]);
+               args = struct2cell(orderfields(seq_params, params_order));
+               basis = seq_func(args{:});
+               basis.fids = basis.fids;
+               metab_bases{l} = basis;
+           end
+           t_vect = metab_bases{1}.t;
+           for m=1:numel(phantom.mm_list)
+               f_m = seq_params.B0 * phantom.mm_freqs(m);
+               T_m = phantom.mm_T2(m) / 10E3;
+               mm_bases{m} = exp(-t_vect/T_m).*exp(2*pi*1i*f_m*t_vect);
+           end
+           figure(3);
+           plot(abs(metab_bases{1}.fids));
+
+           [Nx, Ny, Nz] = size(phantom.labels);
+           x = linspace(-0.5, 0.5, Nx+1); kx = -voxrange(1)/2:1:voxrange(1)/2-1;
+           x = x(1:end-1);
+           y = linspace(-0.5, 0.5, Ny+1); ky = -voxrange(2)/2:1:voxrange(2)/2-1;
+           y = y(1:end-1);
+           for vx = 1:voxrange(1)
+               for vy = 1:voxrange(2)
+                   phase_x = squeeze(kx(vx) * x);
+                   phase_y = squeeze(ky(vy) * y);
+                   bases_fid = zeros(Nx,Ny,seq_params.n);
+                   for sc = zslice
+                       for l = 1:numel(phantom.metabs_list)
+                           metab_fid = reshape(metab_bases{l}.fids, 1, 1, []);
+                           bases_fid = bases_fid + (phantom.metab_data(:,:,sc,l,1) .* metab_fid) * 
+                       end
+                       for m = 1:numel(phantom.mm_list)
+                           mm_fid = reshape(mm_bases{m}, 1, 1, []);
+                           bases_fid = bases_fid + phantom.mm_data(:,:,sc,m,1) .* mm_fid;
+                       end
+                   end
+                   bases_fid = bases_fid .* exp(1i*2*pi*phase_x.');
+                   bases_fid = bases_fid .* exp(1i*2*pi*phase_y);
+                   s = sum(sum(bases_fid,1),2);
+                   kspace(vx,vy,:) = s;         
+                end
+           end
+           sigma_scaled = sigma * sqrt(voxrange(1)*voxrange(2));
+           noise = sigma_scaled*(randn(kspace_dims) + 1i*randn(kspace_dims));
+           kspace = kspace + noise;
+           t = metab_bases{1}.t;
+           ppm = metab_bases{1}.ppm;
+           imspace = fftshift(fftn(kspace) / numel(kspace));
+       end
+   end
+end
