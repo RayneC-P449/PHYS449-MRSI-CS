@@ -7,11 +7,11 @@ classdef Reconstruction
 
         end
         function [S_cs, f_val, g_val] = sparse_reconstruct(obj, Ku, mask, psi, psi_adj, lambda, rho, niter, atol)
-            f = @(s) 0.5*lambda*norm(reshape(mask .* fftn(s)-Ku, [], 1), 2)^2;
+            f = @(s) 0.5*lambda*norm(reshape(mask .* ifftn(s)-Ku, [], 1), 2)^2;
             g = @(v) norm(v, 1);
-            s = ifftn(Ku);
-            v = psi(s);
-            w = zeros(size(v));
+            s = fftn(Ku);
+            % v = psi(s);
+            % w = zeros(size(v));
             for n = 1:niter
                 % s update
                 b = lambda * ifftn(Ku) + rho * psi_adj(v - w);  
@@ -27,9 +27,24 @@ classdef Reconstruction
                 % w update
                 w = w+psi(s)-v;
             end
-            S_cs = s;
-            f_val = f(s);
-            g_val = g(v);
+            for n = 1:niter
+                % s update
+                b = lambda * ifftn(Ku) + rho * psi_adj(v - w);  
+                b = b(:);
+                A = @(a) reshape(lambda * ifftn(mask .* fftn(reshape(a, size(Ku)))) + rho * psi_adj(psi(reshape(a, size(Ku)))), [], 1);
+                s = pcg(A, b, 1e-6, 50, [], [], s);   % Conjugate gradient run
+                s = reshape(s, size(Ku));
+                % v update
+                v = wthresh(psi(s)+w, 's', 1/rho);
+                if f(s) + g(v) < atol
+                    break;
+                end
+                % w update
+                w = w+psi(s)-v;
+            end
+            % S_cs = s;
+            % f_val = f(s);
+            % g_val = g(v);
         end
         function [K_cs, f_val, g_val] = rank_reconstruct(obj, Ku, mask, psi, psi_adj, lambda, rho, niter, atol)            
             for jx = 1:size(Ku, 1)
