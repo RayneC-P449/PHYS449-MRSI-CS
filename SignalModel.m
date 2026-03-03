@@ -43,10 +43,10 @@ classdef SignalModel
                    metab_fid = reshape(metab_bases{l}.fids, 1, 1, []);
                    bases_fid = bases_fid + (phantom.metab_data(:,:,sc,l,1) .* metab_fid) .* exp(reshape(-t_vect,1,1,[]) ./ phantom.metab_data(:,:,sc,l,3));
                end
-               % for m = 1:numel(phantom.mm_list)
-               %     mm_fid = reshape(mm_bases{m}, 1, 1, []);
-               %     bases_fid = bases_fid + phantom.mm_data(:,:,sc,m,1) .* mm_fid;
-               % end
+               for m = 1:numel(phantom.mm_list)
+                   mm_fid = reshape(mm_bases{m}, 1, 1, []);
+                   bases_fid = bases_fid + phantom.mm_data(:,:,sc,m,1) .* mm_fid;
+               end
                Aw = rand(1,5);
                Aw = Aw / sum(Aw);
                for w = 1:5
