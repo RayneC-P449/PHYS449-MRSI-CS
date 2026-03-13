@@ -6,7 +6,7 @@ classdef SignalModel
        function sm = SignalModel()
 
        end
-       function [kspace, t, imspace, ppm] = extract_kspace(obj, phantom, seq_func, seq_params, params_order, zslice, voxrange, sigma, beta)
+       function [kspace, t, imspace, ppm, basis_set] = extract_kspace(obj, phantom, seq_func, seq_params, params_order, zslice, voxrange, sigma, beta)
            kspace_dims = [voxrange, seq_params.n];
            kspace = zeros(kspace_dims);
            metab_bases = {};
@@ -71,6 +71,7 @@ classdef SignalModel
            t = metab_bases{1}.t;
            ppm = metab_bases{1}.ppm;
            imspace = fftshift(fftn(kspace));
+           basis_set = metab_bases;
        end
    end
 end

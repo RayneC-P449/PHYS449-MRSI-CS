@@ -12,7 +12,6 @@ cfg.mm = mm_json;
 cfg.water = zeros(2,2);
 cfg.water(1,:) = [36000, 63.4E-3];
 cfg.water(2,:) = [43300, 52.6E-3];
-
 phantom = Phantom(cfg);
 sm = SignalModel();
 seq_func = @sim_press;
@@ -27,7 +26,7 @@ seq_params.tau1 = TE/4;
 seq_params.tau2 = TE/4;
 zslice = 90:90;
 voxrange = [8,8];
-sigma = 1000;
+sigma = 0;
 params_order = {'n','sw','B0','lw','sys','tau1','tau2'};
 beta = 0.0003;
 [kspace, t, imspace, ppm] = sm.extract_kspace(phantom,@sim_press,seq_params, params_order, zslice, voxrange, sigma, beta);
@@ -49,7 +48,7 @@ for r = 1:voxrange(1)
         ax = axes('Units','normalized',...
                       'Position',[x y w h]);
         plot(ppm, flip(abs(squeeze(imspace(r,c,:)) / max_val)), 'g');
-        ylim([-0.1, 1])
+        ylim([0, 1])
         xlim([min(ppm), max(ppm)])
         box on;
         ax.Color = 'None';
@@ -68,7 +67,7 @@ for r = 1:voxrange(1)
         ax = axes('Units','normalized',...
                       'Position',[x y w h]);
         plot(t, abs(squeeze(kspace(r,c,:)) / max_val), 'g');
-        ylim([-0.1, 2])
+        ylim([0, 2])
         xlim([min(t), max(t)])
         box on;
         ax.Color = 'None';
@@ -76,10 +75,23 @@ for r = 1:voxrange(1)
         ax.YTick = [];      
     end
 end
-p = 0.8;
-mask = rand(voxrange(1), voxrange(2)) > (1-p);
-mask = repmat(mask, 1, 1, seq_params.n);
+
+[Nx,Ny,Nt] = size(kspace);
+R = 4;
+N = Nx*Ny;
+Nsamp = round(N/R);
+[kx, ky] = ndgrid(linspace(-1, 1, Nx), linspace(-1, 1, Ny));
+mask = false(Nx, Ny, Nt);
+for nt = 1:Nt
+    Nsamp = floor(1*(N - N*(nt/Nt)));
+    P = rand(Nx, Ny);
+    [~,idx] = sort(P(:), 'descend');
+    mask_slice = false(size(P));
+    mask_slice(ind2sub(size(P), idx(1:Nsamp))) = true;
+    mask(:,:,nt) = mask_slice;
+end
 Ku = mask .* kspace;
+disp(numel(mask) / nnz(mask));
 figure(3);
 clf;
 for r = 1:voxrange(1)
@@ -89,7 +101,7 @@ for r = 1:voxrange(1)
         ax = axes('Units','normalized',...
                       'Position',[x y w h]);
         plot(t, abs(squeeze(Ku(r,c,:)) / max_val), 'g');
-        ylim([-0.1, 2])
+        ylim([0, 2])
         xlim([min(t), max(t)])
         box on;
         ax.Color = 'None';
@@ -97,88 +109,194 @@ for r = 1:voxrange(1)
         ax.YTick = [];      
     end
 end
+K = zeros(size(Ku));
 
-
-function out = f(P, Ku, mask)
-    temp = mask .* ifftn(P) - Ku;
-    out = 0.5 * norm(temp(:), 2)^2;
+function out = H(f)
+    L = numel(f) / 2;
+    out = hankel(f(1:L), f(L:end));
 end
 
-function out = g(Q, lambda)
-    out = lambda *  norm(Q(:), 1);
-end
-
-function [Q, B] = psi(P)
-    Ns = size(P,3);
-    Q = cell(1, Ns);
-    B = cell(1, Ns);
-    for ns = 1:Ns
-        P_slice = P(:,:,ns);
-        [Q_slice, B_slice] = wavedec2(P_slice, 3, 'db2');
-        Q{ns} = Q_slice;
-        B{ns} = B_slice;
+function out = H_adj(Z)
+    [L, Lp1] = size(Z); 
+    n = L + Lp1 - 1;    
+    out = zeros(n,1);
+    for i = 1:L
+        for j = 1:Lp1
+            k = i + j - 1;
+            out(k) = out(k) + Z(i,j);
+        end
     end
-    Q = cat(3, Q{:});
-    B = cat(3, B{:});
-end
-
-function P = psi_adj(Q, B)
-    Ns = size(Q);
-    Ns = Ns(end);
-    P = cell(1, Ns);
-    idx_Q = repmat({':'}, 1, ndims(Q));
-    idx_B = repmat({':'}, 1, ndims(B));
-    for ns = 1:Ns
-        idx_Q{end} = ns;
-        Q_slice = Q(idx_Q{:});
-        idx_B{end} = ns;
-        B_slice = B(idx_B{:});
-        P{ns} = waverec2(Q_slice, B_slice, 'db2');
-    end
-    P = cat(3, P{:});
-end
-
-P = fftn(Ku);
-max_val = max(abs(P(:)));
-P = P / max_val;
-Ku = Ku / max_val;
-[Q,B] = psi(P);
-W = zeros(size(Q));
-
-function out = A_pcg(v, mask, rho)
-    out = reshape(v, size(mask));
-    [temp1, temp2] = psi(out);
-    out = fftn(mask .* ifftn(out)) + rho * psi_adj(temp1, temp2);
     out = out(:);
 end
-rho = 0.01;
-lambda = 1;
-f0 = f(P,Ku,mask);
-g0 = g(Q,lambda);
-rel = 0.01;
-for iter = 1:2
-    rhs = fftn(Ku) + rho * psi_adj(Q - W, B);  
-    rhs = rhs(:);
-    p0 = P(:);
-    A = @(v) A_pcg(v, mask, rho);
-    p = pcg(A, rhs, 0.01, 50, [], [], p0);
-    P = reshape(p, size(Ku));
-    temp = psi(P) + W;
-    q = wthresh(temp(:), 's', lambda/rho);
-    Q = reshape(q, size(Q));
-    disp(f(P, Ku, mask));
-    disp(g(Q, lambda));
-    if f(P,Ku,mask) + g(Q,lambda) < rel * (f0 + g0)
-        disp("yay");
-        break;
+
+function out = A_pcg(v, mask_slice, rho)
+    out = mask_slice .* v + rho * H_adj(H(v));
+end
+
+rho = 1;
+lambda = 0.005;
+for nx = 1:Nx
+    for ny = 1:Ny
+        ku = Ku(nx, ny, :);
+        ku = ku(:);
+        scale = norm(ku);
+        ku = ku / scale;
+        f = ku;
+        Z = H(f);
+        W = zeros(size(Z));
+        mask_slice = mask(nx,ny,:);
+        mask_slice = mask_slice(:);
+        for iter = 1:10
+            rhs = ku + rho*H_adj(Z - W);
+            rhs = rhs(:);
+            A = @(v) A_pcg(v, mask_slice, rho);
+            f = pcg(A, rhs, 1e-6, 100, [], [], f);
+            [U,S,V] = svd(H(f) + W,'econ');
+            S = max(S - lambda/rho, 0);
+            Z = U * S * V';
+            W = W + H(f) - Z;
+            temp = H(f) - Z;
+            disp(norm(temp(:)));
+        end
+        f = f * scale;
+        K(nx, ny, :) = f;
     end
-
-
-    W = W+psi(P)-Q;
 end
 
 
-
+% [Nx,Ny,Nt] = size(kspace);
+% R = 3;
+% N = Nx*Ny;
+% Nsamp = round(N/R);
+% [kx,ky] = ndgrid(linspace(-1,1,Nx), ...
+%                    linspace(-1,1,Ny));
+% r = sqrt(kx.^2 + ky.^2);
+% p = 4;
+% P = (1-r).^p;
+% P(P<0) = 0;
+% score = P .* rand(size(P));
+% [~,idx] = sort(score(:),'descend');
+% mask = false(size(P));
+% mask(ind2sub(size(P), idx(1:Nsamp))) = true;
+% mask = repmat(mask, 1, 1, Nt);
+% Ku = mask .* kspace;
+% figure(3);
+% clf;
+% for r = 1:voxrange(1)
+%     for c = 1:voxrange(2)
+%         x = (c-1)/voxrange(1);
+%         y = 1-r/voxrange(2);
+%         ax = axes('Units','normalized',...
+%                       'Position',[x y w h]);
+%         plot(t, abs(squeeze(Ku(r,c,:)) / max_val), 'g');
+%         ylim([0, 2])
+%         xlim([min(t), max(t)])
+%         box on;
+%         ax.Color = 'None';
+%         ax.XTick = [];
+%         ax.YTick = [];      
+%     end
+% end
+% 
+% function out = f(P, Ku, mask)
+%     temp = mask .* ifftn(P) * sqrt(numel(mask)) - Ku;
+%     out = 0.5 * norm(temp(:), 2)^2;
+% end
+% 
+% function out = g(Q)
+%     out = norm(Q(:), 1);
+% end
+% 
+% function [Q, B] = psi(P)
+%     Ns = size(P,3);
+%     Q = cell(1, Ns);
+%     B = cell(1, Ns);
+%     for ns = 1:Ns
+%         P_slice = P(:,:,ns);
+%         [Q_slice, B_slice] = wavedec2(real(P_slice), 3, 'db2');
+%         Q_slice = Q_slice + 1i*wavedec2(imag(P_slice), 3, 'db2');
+%         Q{ns} = Q_slice;
+%         B{ns} = B_slice;
+%     end
+%     Q = cat(3, Q{:});
+%     B = cat(3, B{:});
+% end
+% 
+% function P = psi_adj(Q, B)
+%     Ns = size(Q);
+%     Ns = Ns(end);
+%     P = cell(1, Ns);
+%     idx_Q = repmat({':'}, 1, ndims(Q));
+%     idx_B = repmat({':'}, 1, ndims(B));
+%     for ns = 1:Ns
+%         idx_Q{end} = ns;
+%         Q_slice = Q(:,:,ns);
+%         idx_B{end} = ns;
+%         B_slice = B(:,:,ns);
+%         P_real = waverec2(real(Q_slice), B_slice, 'db2');
+%         P_imag = waverec2(imag(Q_slice), B_slice, 'db2');
+%         P{ns} = P_real + 1i*P_imag;
+%     end
+%     P = cat(3, P{:});
+% end
+% scale = norm(Ku(:));
+% disp(scale);
+% % max_val = max(abs(P(:)));
+% Ku = Ku / scale;
+% P = fftn(Ku) / sqrt(numel(mask));
+% [Q,B] = psi(P);
+% W = zeros(size(Q));
+% % Ku = Ku * sqrt(numel(mask));
+% 
+% 
+% 
+% 
+% function out = A_pcg(v, mask, rho)
+%     out = reshape(v, size(mask));
+%     [temp1, temp2] = psi(out);
+%     out = fftn(mask .* ifftn(out) * sqrt(numel(mask))) / sqrt(numel(mask)) + rho * psi_adj(temp1, temp2);
+%     out = out(:);
+% end
+% rho = 5;
+% lambda = 0.0006;
+% f0 = f(P,Ku,mask);
+% g0 = g(Q);
+% disp(f0);
+% disp(g0);
+% rel = 0.01;
+% [cat, poo] = psi(P);
+% temp1 = psi_adj(cat,poo);
+% test = psi_adj(cat, poo) - P;
+% disp("dog");
+% disp(norm(test(:)));
+% 
+% 
+% for iter = 1:5
+%     rhs = fftn(Ku) / sqrt(numel(mask)) + rho * psi_adj(Q - W, B);  
+%     rhs = rhs(:);
+%     p0 = P(:);
+%     A = @(v) A_pcg(v, mask, rho);
+% 
+%     p = pcg(A, rhs, 1e-6, 50, [], [], p0);
+%     P = reshape(p, size(Ku));
+%     temp = psi(P) + W;
+%     q = wthresh(temp(:), 's', lambda/rho);
+%     Q = reshape(q, size(Q));
+%     disp(f(P, Ku, mask));
+%     disp(g(Q));
+%     temp = psi(P);
+%     temp = temp(:);
+%     res = norm(temp-q(:));
+%     disp(norm(temp));
+%     disp(norm(q(:)));
+%     disp(res);
+%     % if f(P,Ku,mask) + g(Q,lambda) < rel * (f0 + g0)
+%     %     disp("yay");
+%     %     break;
+%     % end
+%     W = W+psi(P)-Q;
+% end
+P = fftn(K);
 P = fftshift(P);
 figure(4);
 clf;
@@ -197,8 +315,8 @@ for r = 1:voxrange(1)
         y = 1-r/voxrange(2);
         ax = axes('Units','normalized',...
                       'Position',[x y w h]);
-        plot(ppm, flip(abs(squeeze(P(r,c,:)) / max_val)), 'g');
-        ylim([-0.1, 1])
+        plot(ppm, flip(abs(squeeze(P(r,c,:) - 0*imspace(r,c,:))/ max_val)), 'g');
+        ylim([0, 1])
         xlim([min(ppm), max(ppm)])
         box on;
         ax.Color = 'None';
@@ -209,10 +327,9 @@ for r = 1:voxrange(1)
 end
 
 
+disp(numel(mask) / nnz(mask));
 
-
-
-
+disp(sum(abs(Ku(:)).^2) / sum(abs(kspace(:)).^2));
 
 
 

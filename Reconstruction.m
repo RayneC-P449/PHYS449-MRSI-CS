@@ -6,70 +6,16 @@ classdef Reconstruction
         function obj = Reconstruction()
 
         end
-        function [S_cs, f_val, g_val] = sparse_reconstruct(obj, Ku, mask, psi, psi_adj, lambda, rho, niter, atol)
-            f = @(s) 0.5*lambda*norm(reshape(mask .* ifftn(s)-Ku, [], 1), 2)^2;
-            g = @(v) norm(v, 1);
-            s = fftn(Ku);
-            % v = psi(s);
-            % w = zeros(size(v));
-            for n = 1:niter
-                % s update
-                b = lambda * ifftn(Ku) + rho * psi_adj(v - w);  
-                b = b(:);
-                A = @(a) reshape(lambda * ifftn(mask .* fftn(reshape(a, size(Ku)))) + rho * psi_adj(psi(reshape(a, size(Ku)))), [], 1);
-                s = pcg(A, b, 1e-6, 50, [], [], s);   % Conjugate gradient run
-                s = reshape(s, size(Ku));
-                % v update
-                v = wthresh(psi(s)+w, 's', 1/rho);
-                if f(s) + g(v) < atol
-                    break;
-                end
-                % w update
-                w = w+psi(s)-v;
-            end
-            for n = 1:niter
-                % s update
-                b = lambda * ifftn(Ku) + rho * psi_adj(v - w);  
-                b = b(:);
-                A = @(a) reshape(lambda * ifftn(mask .* fftn(reshape(a, size(Ku)))) + rho * psi_adj(psi(reshape(a, size(Ku)))), [], 1);
-                s = pcg(A, b, 1e-6, 50, [], [], s);   % Conjugate gradient run
-                s = reshape(s, size(Ku));
-                % v update
-                v = wthresh(psi(s)+w, 's', 1/rho);
-                if f(s) + g(v) < atol
-                    break;
-                end
-                % w update
-                w = w+psi(s)-v;
-            end
-            % S_cs = s;
-            % f_val = f(s);
-            % g_val = g(v);
-        end
-        function [K_cs, f_val, g_val] = rank_reconstruct(obj, Ku, mask, psi, psi_adj, lambda, rho, niter, atol)            
-            for jx = 1:size(Ku, 1)
-                for jy = 1:size(Ku, 2)
-                    for jz = 1:size(Ku, 3)
-                        ku = Ku(jx,jy,jz,:);
-                        kj = ku;
-                        vj = psi(kj);
-                        wj = zeros(size(vj));
-                        ku = ku(:); kj = kj(:); vj = vj(:); wj = wj(:);
-                        for n = 1:niter
-                            % kj update                            
-                            b = lambda * ku + rho * psi_adj(vj - wj);  
-                            b = b(:);
-                            A = @(a) lambda * mask .* a + rho * psi_adj(psi(a));
-                            kj = pcg(A, b, 1e-6, 50, [], [], kj);
-                            % vj update
-                            [U,S,V] = svd(psi(kj) + wj,'econ');
-                            S_thresh = max(S - 1/rho, 0);
-                            vj = U * S_thresh * V'; 
-                            % wj update
-                            wj = wj + psi(kj) - vj;
-                        end
-                    end
-                end
+        
+        function [X, Z, W] = reconstruct(obj, X0, Z0, W0, U, Y, rho, lambda, updateX, updateZ, updateW, max_iter, monitor)
+            X = X0;
+            Z = Z0;
+            W = W0;
+            for iter = 1:max_iter
+                X = updateX(X,Z,W,U,Y,rho);
+                Z = updateZ(X,Z,W,rho,lambda);
+                W = updateW(X,Z,W);
+                % monitor(X,Z,W,U,Y);
             end
         end
     end
