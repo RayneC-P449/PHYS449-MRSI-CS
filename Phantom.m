@@ -32,7 +32,7 @@ classdef Phantom < handle
                     temp2 = temp1(temp1.Label == label, :);
                     metabs(label,l,1) = fillmissing(temp2.Conc_mean,'constant',0);
                     metabs(label,l,2) = fillmissing(temp2.Conc_std,'constant',0);
-                    metabs(label,l,3) = fillmissing(temp2.T2 / 10E3,'constant',Inf);
+                    metabs(label,l,3) = fillmissing(temp2.T2 / 1E3,'constant',Inf);
                 end
             end
             phantom.mm_freqs = zeros(numel(phantom.mm_list), 1);
@@ -40,7 +40,7 @@ classdef Phantom < handle
                 for label = 1:2
                     mm(label,m,1) = mm_json.scale(m);
                 end
-                phantom.mm_freqs(m) = mm_json.ppm_offset - mm_json.ppm_position(m);
+                phantom.mm_freqs(m) = mm_json.ppm_position(m) - mm_json.ppm_offset;
                 phantom.mm_T2(m) = mm_json.T2_wm(m);
             end
             phantom.metab_data = zeros(I,J,K,L,M);

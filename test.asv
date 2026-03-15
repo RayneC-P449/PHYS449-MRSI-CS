@@ -1,0 +1,10 @@
+clear;
+path = fullfile(pwd, 'simulated','1','41');
+bg_img =  mat2gray(imread(fullfile(path,'MRI.png')));
+data = load(fullfile(path,'kspace.mat')).data;
+vis = Visualizer;
+imspac = fftshift(fftn(data.kspace));
+vis.visualize(flip(data.ppm), data.ppm, 1, bg_img, max(abs(imspace(:))), 'reverse', [0 1]);
+
+clf;
+plot(flip(data.ppm), squeeze(abs(v(8,8,:))));

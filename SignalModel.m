@@ -6,23 +6,13 @@ classdef SignalModel
        function sm = SignalModel()
 
        end
-       function [kspace, t, imspace, ppm, basis_set] = extract_kspace(obj, phantom, seq_func, seq_params, params_order, zslice, voxrange, sigma, beta)
+       function [kspace, t, ppm] = extract_kspace(obj, metab_bases, seq_params, phantom, zslice, voxrange, sigma, beta)
            kspace_dims = [voxrange, seq_params.n];
            kspace = zeros(kspace_dims);
-           metab_bases = {};
-           load spinSystems
-           for l=1:numel(phantom.metabs_list)
-               metab = phantom.metabs_list(l);
-               seq_params.sys = eval(['sys' char(metab)]);
-               args = struct2cell(orderfields(seq_params, params_order));
-               basis = seq_func(args{:});
-               basis.fids = basis.fids;
-               metab_bases{l} = basis;
-           end
            t_vect = metab_bases{1}.t;
            for m=1:numel(phantom.mm_list)
                f_m = seq_params.B0 * phantom.gyro * phantom.mm_freqs(m);
-               T_m = phantom.mm_T2(m) / 10E3;
+               T_m = phantom.mm_T2(m) / 1E3;
                mm_bases{m} = exp(-t_vect/T_m).*exp(2*pi*1i*f_m*t_vect);
            end
            T2_prime = 1/(pi*seq_params.lw);
@@ -65,13 +55,9 @@ classdef SignalModel
                    kspace(vx,vy,:) = temp;         
                 end
            end
-           noise = sigma*(randn(kspace_dims) + 1i*randn(kspace_dims));
-           kspace = kspace + noise;
-           kspace = kspace / (voxrange(1) * voxrange(2));
            t = metab_bases{1}.t;
            ppm = metab_bases{1}.ppm;
-           imspace = fftshift(fftn(kspace));
-           basis_set = metab_bases;
+  
        end
    end
 end

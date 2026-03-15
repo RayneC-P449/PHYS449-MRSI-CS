@@ -1,38 +1,8 @@
-clear;
-addpath(genpath(".."));
-addpath(genpath("../../FID-A-master"));
-cfg = struct(); 
-cfg.metabs = readtable('data/metabolites/metab_df.csv');
-cfg.metabs_list = ["Asp","NAAG","Cr","PCr","GPC","PCh", ...
-    "Glu","Gln","GABA","GSH","NAA","Tau","PE", "Lac"];
-cfg.labels = niftiread('data/skeleton/labels.nii');
-mm_json = jsondecode(fileread('data/macromolecules/mm_json.json'));
-cfg.mm_list = mm_json.names;
-cfg.mm = mm_json;
-cfg.water = zeros(2,2);
-cfg.water(1,:) = [36000, 63.4E-3];
-cfg.water(2,:) = [43300, 52.6E-3];
-phantom = Phantom(cfg);
-sm = SignalModel();
-seq_func = @sim_press;
-seq_params = struct();
-seq_params.n = 1024;
-seq_params.sw = 2000;
-seq_params.B0 = 3;
-seq_params.lw = 4;
-seq_params.sys = 0; 
-TE   = 30e-3;  
-seq_params.tau1 = TE/4;             
-seq_params.tau2 = TE/4;
-zslice = 90;
-voxrange = [2,2];
-sigma = 0;
-params_order = {'n','sw','B0','lw','sys','tau1','tau2'};
-beta = 0;
-[kspace, t, imspace, ppm, basis_set] = sm.extract_kspace(phantom,@sim_press,seq_params, params_order, zslice, voxrange, sigma, beta);
-bg_img = niftiread('data/skeleton/labels.nii');
-bg_img = mat2gray(bg_img(:,:,zslice));
-vis = Visualizer();
+
+
+
+
+
 
 accel = 2;
 [Nx,Ny,Nt] = size(kspace);
@@ -44,18 +14,7 @@ U_slice = false(size(U_slice));
 U_slice(ind2sub(size(U_slice), idx)) = true;
 U = repmat(U_slice, 1, 1, Nt);
 
-fids = reshape(kspace, size(kspace,1), size(kspace,2), 1, size(kspace,3));
-fids = fft(fft(fft(fids, [], 1), [], 2), [], 3);
-fids = fftshift(fftshift(fftshift(fids, 1), 2), 3);
 
-
-% vis.visualize(fids, t, 1, bg_img, rms(abs(kspace(:))), 'normal', [0, 2]);
-% vis.visualize(imspace, flip(ppm), 2, bg_img, max(abs(imspace(:))), 'reverse', [0, 1]);
-
-folder = './temp_bases';
-for m = 1:numel(phantom.metabs_list)
-
-end
 
 
 
