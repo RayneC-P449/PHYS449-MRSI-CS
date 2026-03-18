@@ -55,6 +55,7 @@ classdef SignalModel
                    kspace(vx,vy,:) = temp;         
                 end
            end
+           kspace = kspace / (Nx * Ny);
            t = metab_bases{1}.t;
            ppm = metab_bases{1}.ppm;
   

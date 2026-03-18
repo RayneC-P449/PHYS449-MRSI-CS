@@ -94,6 +94,10 @@ classdef LCMHelper
            fprintf(ctrl, 'filbas=''%s''\n', filbas);
            fprintf(ctrl, 'filraw=''%s''\n', filraw);
            fprintf(ctrl, 'filps=''%s''\n', filout);
+           fprintf(ctrl, 'filtab=''%s''\n', strrep(filout, '.ps','.table'));
+           fprintf(ctrl, 'ltable=%s\n', '7');
+           fprintf(ctrl, 'nratio=%s\n', '0');
+           fprintf(ctrl, 'nsimul=%s\n', '0');
            fprintf(ctrl, '$END\n');
            fclose(ctrl);
        end

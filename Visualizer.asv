@@ -6,19 +6,11 @@ classdef Visualizer
        function obj = Visualizer()
        end
 
-       function visualize(~, x, Y, xdir, ylimits, img, path)
+       function visualize(~, x, Y, xdir, ylimits, imgpath)
            f = figure('Visible', 'off');
-           ax_bg = axes('Units','normalized','Position',[0 0 1 1]);
-           imshow(img, 'Parent', ax_bg);
-           axis(ax_bg, 'off');
-           set(ax_bg,'DataAspectRatioMode','auto')
            voxrange = size(Y, [1,2]);
            w = 1/voxrange(1);
            h = 1/voxrange(2);
-           % set(gcf, 'Units', 'pixels');
-           % pos = get(gcf, 'Position');
-           % side = min(pos(3), pos(4));
-           % set(gcf, 'Position', [pos(1), pos(2), side, side]);
            for r = 1:voxrange(1)
                for c = 1:voxrange(2)
                    rv = (c-1)/voxrange(1);

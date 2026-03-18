@@ -1,3 +1,4 @@
+clear;
 addpath(genpath("../FID-A-master"));
 cfg = struct(); 
 cfg.metabs = readtable('data/metabolites/metab_df.csv');
@@ -7,6 +8,7 @@ cfg.metabs_list = ["Asp","NAAG","Cr","PCr","GPC","PCh", ...
 cfg.labels = niftiread('data/skeleton/labels.nii');
 cfg.labels = cfg.labels(41:140,59:158,41:140);
 pd_data = niftiread('data\skeleton\pd.nii');
+label_data = cfg.labels;
 pd_data = pd_data(41:140,59:158,41:140);
 mm_json = jsondecode(fileread('data/macromolecules/mm_json.json'));
 
@@ -46,23 +48,44 @@ for o = 1:3
     phantom.mm_data     = permute(phantom.mm_data, [orient, 4:nd_mm]);
     phantom.water_data  = permute(phantom.water_data, [orient, 4:nd_water]);
     pd_data = permute(pd_data, orient);
+    label_data = permute(label_data, orient);
     slice_thickness = 10;
     for start_idx = 1:slice_thickness:size(phantom.labels,3)-slice_thickness+1
         end_idx = start_idx + slice_thickness - 1;
         path = fullfile(pwd, 'simulated', num2str(o), num2str(start_idx));
         [~,~] = mkdir(path);
-        img = sum(pd_data(:,:,round((start_idx+end_idx)/2)),3);
-        img = mat2gray(img);
-        img_path = fullfile(path, 'MRI.png');
-        imwrite(img,img_path);
-        voxrange = [16,16]; sigma = 0; beta = 0;
+        label_img = label_data(:,:,round((start_idx+end_idx)/2));
+        vals = unique(label_img);
+        n = numel(vals);
+        % Map values to 1..n
+        [~, img_idx] = ismember(label_img, vals);
+        fig = figure('Visible','off');
+        imagesc(img_idx);
+        axis image off
+        colormap(lines(n));
+        caxis([0.5 n+0.5]);
+        cb = colorbar;
+        cb.Ticks = 1:n;
+        cb.TickLabels = vals;   
+        label_img_path = fullfile(path, 'labels.png');
+        saveas(fig,label_img_path);
+        close(fig);
+        pd_img = pd_data(:,:,round((start_idx+end_idx)/2));
+        fig = figure('Visible', 'off');
+        pd_img = im2gray(pd_img);
+        imshow(pd_img);
+        pd_img_path = fullfile(path, 'MRI.png');
+        saveas(fig,pd_img_path);
+        close(fig);
+        voxrange = [12,12]; sigma = 0; beta = 0;
         slice = start_idx:end_idx;
         data = struct;
-        temp = fullfile(path, '1-1');
-        rmdir(temp);
         [data.kspace, data.t, data.ppm] = sm.extract_kspace(metab_bases, seq_params, phantom, slice, voxrange, sigma, beta); 
-        k_path = fullfile(path, 'kspace.mat');      
+        k_path = fullfile(path, 'kspace.mat'); 
+        data.MRI = pd_img;
+        data.labels = label_img;
         save(k_path, 'data');
+        disp(k_path);
     end
 end
 folder = fullfile(pwd,'simulated', 'basis');

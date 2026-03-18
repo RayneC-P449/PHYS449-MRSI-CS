@@ -45,7 +45,7 @@ classdef Phantom < handle
             end
             phantom.metab_data = zeros(I,J,K,L,M);
             phantom.metab_data(:,:,:,:,3) = Inf;
-            labelings = [3,2];
+            labelings = [2,3];
             for label = 1:2
                 mask = (phantom.labels == labelings(label));
                 temp = reshape(phantom.metab_data, [], L, M);
