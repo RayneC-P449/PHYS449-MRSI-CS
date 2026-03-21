@@ -144,16 +144,16 @@ function [Krc, Ku] = reconstruct(rc_params, data_folder)
         case 'DWT'
             Krc = dwt1(Ku, U, rc_params);
         case 'TGV'
-            Krc = tgv(Ku, U, rc_params);
+            Krc = tgv2(Ku, U, rc_params);
         case 'HKM'
             Krc = hkm1(Ku, U, rc_params);
     end
 end
 
 
-function grid_search(data_folders, rc_params, lambda_grid)
-    for idx = 1:numel(lambda_grid)
-        rc_params.lambda = lambda_grid(ind2sub(size(lambda_grid), idx));
+function grid_search(data_folders, rc_params, lambdas)
+    for idx = 1:numel(lambdas)
+        rc_params.lambda = lambdas
         fprintf("λ = %.5e\n", rc_params.lambda);
         for i = 1:numel(data_folders)
             data_folder = data_folders{i};
@@ -176,8 +176,8 @@ function grid_search(data_folders, rc_params, lambda_grid)
             rc_data.t = ref_data.t;
             rc_data.ppm = ref_data.ppm;
             rc_data.params = rc_params;
-            
-            nrmse = norm(ref_data.X(:) - rc_data.X(:)) / norm(ref_data.X(:));
+            a = sum(conj(rc_data.X(:)) .* ref_data.X(:)) / sum(conj(rc_data.X(:)) .* rc_data.X(:));
+            nrmse = norm(ref_data.X(:) - a*rc_data.X(:)) / norm(ref_data.X(:));
             disp(nrmse);
             save(rc_path, 'rc_data');
 
@@ -189,17 +189,20 @@ function grid_search(data_folders, rc_params, lambda_grid)
 end
 rc_params = struct();
 rc_params.rho = [1,1];
-rc_params.ptol = [1e-4,1e-4];
-rc_params.dtol = [1e-4,1e-4];
-rc_params.mu = 10;
-rc_params.gu = 2;
-rc_params.gl = 2;
-rc_params.scheme = 'TGV';
-rc_params.accel = 3;
-lambdas = 1e-4;
-lambda_grid = ndgrid(lambdas,lambdas);
-data_paths = {'C:\Users\rayne\PHYS449\Thesis\simulations\setup_1\Axial\slice_1-10'};
-grid_search(data_paths, rc_params, lambda_grid);
+rc_params.ptol = [1e-2,1e-2];
+rc_params.dtol = [5e-2,1e-2];
+rc_params.mu = [10,10];
+rc_params.gu = [2,2];
+rc_params.gl = [2,2];
+rc_params.scheme = 'DWT';
+rc_params.accel = 5;
+lambdas = logspace(-9,-1,9);
+data_paths = {...
+    'C:\Users\rayne\PHYS449\Thesis\simulations\setup_1\Axial\slice_51-60', ...
+    'C:\Users\rayne\PHYS449\Thesis\simulations\setup_1\Coronal\slice_51-60' ...
+    'C:\Users\rayne\PHYS449\Thesis\simulations\setup_1\Sagittal\slice_51-60', ...
+};
+grid_search(data_paths, rc_params, lambdas);
 
 
 

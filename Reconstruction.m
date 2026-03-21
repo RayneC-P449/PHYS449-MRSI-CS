@@ -37,7 +37,7 @@ classdef Reconstruction < handle
                     
                     rc.dual{i} = rc.ascent{i}(rc);
                 end
-                fprintf("f = %2.5f\n", rc.obj{1}(rc))
+               
                 converged = true;
                 for i = 1:numel(rc.dual)
                     res_ok = true;
@@ -55,6 +55,7 @@ classdef Reconstruction < handle
                         rc.rho(i) = rc.rho(i) / rc.gl(i);
                     end
                     if verbose
+                        fprintf("f = %.5e\n", rc.obj{1}(rc))
                         fprintf('pres_rel %d = %2.5f\n', i, pres_rel);
                         fprintf('dres_rel %d = %2.5f\n', i, dres_rel);
                     end

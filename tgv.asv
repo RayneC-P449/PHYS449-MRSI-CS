@@ -8,7 +8,6 @@ function Krc = tgv(Ku, U, params)
     V = grad3(X,mem);
     Z = grad3(X,mem) - V; % has dual
     E = eps3(V,mem); % has dual
-    E = zeros(size(E));
     W1 = zeros(size(Z));
     W2 = zeros(size(E));
 
@@ -16,8 +15,8 @@ function Krc = tgv(Ku, U, params)
     rc.dual = {W1,W2};
     
     
-    mem.alpha0 = 0.5;
-    mem.alpha1 = 0.5;
+    mem.alpha0 = 2/3;
+    mem.alpha1 = 1/3;
     mem.V_size = size(V);
 
     rc.rho = params.rho;
@@ -56,7 +55,7 @@ function Krc = tgv(Ku, U, params)
     
    
 
-    rc.iter_max = 100;
+    rc.iter_max = 1000;
     disp("hey");
     rc.admm(true);
 
@@ -64,29 +63,58 @@ function Krc = tgv(Ku, U, params)
 end
 
 function Y = phi(X,mem)
-    Y = mem.U .* ifftn(X) * sqrt(numel(mem.U));
+    Y = mem.U .* ifftn(ifftshift(X)) * sqrt(numel(mem.U));
 end
 
 function X = phiH(Y,mem)
-    X = fftn(mem.U .* Y) / sqrt(numel(mem.U));
+    X = fftshift(fftn(mem.U .* Y)) / sqrt(numel(mem.U));
 end
 
 function V = grad3(X,mem)
-    V = zeros(size(X,1),size(X,2),size(X,3),2);
-    for ns = 1:size(V,3)
-        V(:,:,ns,:) = grad_fwd(X(:,:,ns));
-    end
+    V = zeros(size(X,1), size(X,2), size(X,3), 3);
+    V(:,:,:,1) = X([2:end 1],:,:) - X;
+    V(:,:,:,2) = X(:,[2:end 1],:) - X;
+    V(:,:,:,3) = X(:,:,[2:end 1],:) - X;
 end
 
 function fval = get_fX(rc, mem)
     fval = 0.5 * norm(mem.Y - phi(rc.primal{1},mem), 'fro')^2;
 end
+
+
 function E = eps3(V,mem)
-    E = zeros(size(V,1), size(V,2), size(V,3), 2, 2);
-    for ns = 1:size(V,3)
-        E(:,:,ns,:,:) = eps_fwd(squeeze(V(:,:,ns,:)));
-    end
+    E = zeros(size(V,1),size(V,2),size(V,3),3,3);
+
+    v1 = V(:,:,:,1);
+    v2 = V(:,:,:,2);
+    v3 = V(:,:,:,3);
+
+    dv1_dx = v1([2:end 1],:,:) - v1;
+    dv1_dy = v1(:,[2:end 1],:) - v1;
+    dv1_dz = v1(:,:,[2:end 1]) - v1;
+
+    dv2_dx = v2([2:end 1],:,:) - v2;
+    dv2_dy = v2(:,[2:end 1],:) - v2;
+    dv2_dz = v2(:,:,[2:end 1]) - v2;
+
+    dv3_dx = v3([2:end 1],:,:) - v3;
+    dv3_dy = v3(:,[2:end 1],:) - v3;
+    dv3_dz = v3(:,:,[2:end 1]) - v3;
+
+    E(:,:,:,1,1) = dv1_dx;
+    E(:,:,:,2,2) = dv2_dy;
+    E(:,:,:,3,3) = dv3_dz;
+
+    E(:,:,:,1,2) = 0.5*(dv1_dy + dv2_dx);
+    E(:,:,:,2,1) = E(:,:,:,1,2);
+
+    E(:,:,:,1,3) = 0.5*(dv1_dz + dv3_dx);
+    E(:,:,:,3,1) = E(:,:,:,1,3);
+
+    E(:,:,:,2,3) = 0.5*(dv2_dz + dv3_dy);
+    E(:,:,:,3,2) = E(:,:,:,2,3);
 end
+
 
 
 
@@ -115,23 +143,9 @@ function X = updateX(rc, mem)
     rhs = phiH(Y,mem) + rho1 * -div3(b);
     rhs = rhs(:);
     A = @(x) A_pcg(x,mem,rho1);
-    [x,~] = pcg(A,rhs,1e-8,200,[],[],X(:));
+    M = mem.U
+    [x,~] = pcg(A,rhs,1e-4,200,[],[],X(:));
     X = reshape(x,size(X));
-    % start = X;
-    % FY = phiH(Y,mem);
-    % for ns = 1:size(X,3)
-    %      mem.U = U(:,:,ns);
-    %      x = X(:,:,ns);
-    %      start = x;
-    %      rhs = FY(:,:,ns) + 0 * rho1 * -div_bwd(b(:,:,ns,:));
-    %      rhs = rhs(:);
-    %      A = @(x) A_pcg(x,mem,rho1);
-    %      % test = phi(X(:,:,ns),mem) - Y(:,:,ns);
-    %      % disp(norm(test(:)));
-    %      [x,~] = pcg(A,rhs,1e-6,2000,[],[],x(:));
-    %      X(:,:,ns) = reshape(x, size(mem.U));
-    % end
-    % disp(norm(start - X, 'fro'));
 end
 
 function v = B_pcg(v,mem,rho1,rho2)
@@ -148,70 +162,48 @@ function V = updateV(rc, mem)
     rhs = rho1*(Gx - Z + W1) + rho2*-ediv3(E-W2);
     rhs = rhs(:);
     B = @(v) B_pcg(v,mem,rho1,rho2);
-    [v,~] = pcg(B,rhs,1e-6,200,[],[],V(:));
+    [v,~] = pcg(B,rhs,1e-4,200,[],[],V(:));
     V = reshape(v, size(V));
-    % for ns = 1:size(X,3)
-    %     rhs = rho1*(squeeze(Gx(:,:,ns,:) - Z(:,:,ns,:) + W1(:,:,ns,:))) + rho2*-ediv_bwd(E - W2);
-    %     rhs = rhs(:);
-    %     v = V(:,:,ns,:);
-    %     s = size(v);
-    %     B = @(v) B_pcg(v,mem,rho1,rho2);
-    %     [v,~] = pcg(B,rhs,1e-9,2000,[],[],v(:));
-    %     V(:,:,ns,:) = reshape(v, s);
-    % end
 end
 
-function div = div_bwd(G)
-    gx = G(:,:,1);
-    gy = G(:,:,2);
-    div = gx - gx([end,1:end-1], :);
-    div = div + gy - gy(:, [end, 1:end-1]);
+
+function X = div3(V)
+    X = zeros(size(V,1), size(V,2), size(V,3));
+    X = X + V(:,:,:,1) - V([end 1:end-1],:,:,1);
+    X = X + V(:,:,:,2) - V(:,[end 1:end-1],:,2);
+    X = X + V(:,:,:,3) - V(:,:,[end 1:end-1],3);
 end
 
-function div = div3(G)
-    div = zeros(size(G,1:3));
-    for ns = 1:size(div,3)
-        div(:,:,ns) = div_bwd(squeeze(G(:,:,ns,:)));
-    end
-end
-
-function v = grad_fwd(X)
-    v = zeros(size(X,1),size(X,2),2);
-    gx = X([2:end,1], :) - X(:,:);
-    gy = X(:, [2:end,1]) - X(:,:);
-
-    v(:,:,1) = gx;
-    v(:,:,2) = gy;
-    
-end
-
-function e = eps_fwd(V)
-    vx = V(:,:,1); vy = V(:,:,2);
-    vx_xy = grad_fwd(vx);
-    vy_xy = grad_fwd(vy);
-    e11 = vx_xy(:,:,1);
-    e22 = vy_xy(:,:,2);
-    e12 = 0.5 * (vx_xy(:,:,2) + vy_xy(:,:,1));
-    e(:,:,1,1) = e11;
-    e(:,:,1,2) = e12;
-    e(:,:,2,1) = e12;
-    e(:,:,2,2) = e22;
-end
-
-function V = ediv_bwd(E)
-    E11 = E(:,:,1,1);
-    E12 = E(:,:,1,2);
-    E21 = E(:,:,2,1);
-    E22 = E(:,:,2,2);
-    V(:,:,1) = div_bwd(cat(3, E11, E12));
-    V(:,:,2) = div_bwd(cat(3, E21, E22));
-end
 
 function V = ediv3(E)
-    V = zeros(size(E,1:4));
-    for ns = 1:size(V,3)
-        V(:,:,ns,:) = ediv_bwd(squeeze(E(:,:,ns,:,:)));
-    end
+    V = zeros(size(E,1), size(E,2), size(E,3), 3);
+
+    E11 = E(:,:,:,1,1);
+    E22 = E(:,:,:,2,2);
+    E33 = E(:,:,:,3,3);
+
+    E12 = E(:,:,:,1,2); E21 = E(:,:,:,2,1);
+    E13 = E(:,:,:,1,3); E31 = E(:,:,:,3,1);
+    E23 = E(:,:,:,2,3); E32 = E(:,:,:,3,2);
+
+    sx = @(X) X([end 1:end-1],:,:);
+    sy = @(X) X(:,[end 1:end-1],:);
+    sz = @(X) X(:,:,[end 1:end-1]);
+
+    V(:,:,:,1) = ...
+        (E11 - sx(E11)) + ...
+        0.5*(E12 - sy(E12)) + 0.5*(E21 - sx(E21)) + ...
+        0.5*(E13 - sz(E13)) + 0.5*(E31 - sx(E31));
+
+    V(:,:,:,2) = ...
+        0.5*(E12 - sx(E12)) + 0.5*(E21 - sy(E21)) + ...
+        (E22 - sy(E22)) + ...
+        0.5*(E23 - sz(E23)) + 0.5*(E32 - sy(E32));
+
+    V(:,:,:,3) = ...
+        0.5*(E13 - sx(E13)) + 0.5*(E31 - sz(E31)) + ...
+        0.5*(E23 - sy(E23)) + 0.5*(E32 - sz(E32)) + ...
+        (E33 - sz(E33));
 end
 
 function Z = updateZ(rc,mem)

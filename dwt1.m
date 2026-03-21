@@ -59,6 +59,7 @@ end
 function Z = psi(X,mem)
     Z = zeros(mem.psi_dims);
     for nx = 1:mem.X_dims(1)
+        
         for ny = 1:mem.X_dims(2)
             u = X(nx,ny,:);
             Z(nx,ny,:) = wavedec(u(:), 4, 'db4');

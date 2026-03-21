@@ -16,6 +16,7 @@ cfg.mm = mm_json;
 cfg.water = zeros(2,2);
 cfg.water(1,:) = [36000, 52.6E-3];
 cfg.water(2,:) = [43300, 63.4E-3];
+cfg.pd = pd_data;
 phantom = Phantom(cfg);
 seqparams = struct;
 seq_params.sw = 2000;

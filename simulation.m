@@ -7,7 +7,7 @@ function phantom = load_phantom()
     cfg.metabs_list = ["Asp","NAAG","Cr","PCr","GPC","PCh", ...
         "Glu","Gln","GABA","GSH","NAA","Tau","PE", "Lac", "Ins"];
     cfg.labels = niftiread('data/skeleton/labels.nii');
-    slices = {41:140, 59:158, 41:140};
+    slices = {31:150, 49:168, 31:150};
     cfg.labels = cfg.labels(slices{:});
     cfg.pd = niftiread('data\skeleton\pd.nii');
     cfg.pd = cfg.pd(slices{:});
@@ -121,14 +121,14 @@ end
 % seq_params.tau1 = seq_params.te/4;
 % seq_params.tau2 = seq_params.te/4;
 % seq_params.n = 1024;
-% setup_params_list = {struct('voxels', [12, 12], 'sigma', 0, 'beta', 0, 'B0_map', ones([12,12]), 'slice_thickness', 10, 'seq_params', seq_params)};
+% setup_params_list = {struct('voxels', [16, 16], 'sigma', 0, 'beta', 0, 'B0_map', ones([16,16]), 'slice_thickness', 10, 'seq_params', seq_params)};
 % orientations = {'Axial', 'Coronal', 'Sagittal'};
 % permutations = {[1,2,3], [1,3,2], [2,3,1]};
 % 
 % simulate(setup_params_list, orientations, permutations);
-
-
-
+% 
+% 
+% 
 function [Krc, Ku] = reconstruct(rc_params, data_folder)
     data_path = fullfile(data_folder, 'data.mat');
     data = load(data_path).data;
@@ -144,20 +144,22 @@ function [Krc, Ku] = reconstruct(rc_params, data_folder)
         case 'DWT'
             Krc = dwt1(Ku, U, rc_params);
         case 'TGV'
-            Krc = tgv(Ku, U, rc_params);
+            Krc = tgv2(Ku, U, rc_params);
         case 'HKM'
             Krc = hkm1(Ku, U, rc_params);
     end
 end
 
 
-function grid_search(data_folders, rc_params, lambda_grid)
-    for idx = 1:numel(lambda_grid)
-        rc_params.lambda = lambda_grid(ind2sub(size(lambda_grid), idx));
+function grid_search(data_folders, rc_params, lambdas)
+    for idx = 1:numel(lambdas)
+        rc_params.lambda = lambdas(idx);
         fprintf("λ = %.5e\n", rc_params.lambda);
+        nrmses = zeros(numel(data_folders),1);
         for i = 1:numel(data_folders)
             data_folder = data_folders{i};
             [Krc, Ku] = reconstruct(rc_params, data_folder);
+    
             accel_path = fullfile(data_folder, sprintf('%s_%d', 'accel', round(rc_params.accel)));
             [~,~] = mkdir(accel_path);
             vis = Visualizer();
@@ -170,18 +172,24 @@ function grid_search(data_folders, rc_params, lambda_grid)
             data_path = fullfile(data_folder, 'data.mat');
             ref_data = load(data_path).data;
             rc_data = struct();
-            
+
             rc_data.K = Krc;
             rc_data.X = fftshift(fftn(Krc));
             rc_data.t = ref_data.t;
             rc_data.ppm = ref_data.ppm;
             rc_data.params = rc_params;
-            
-            nrmse = norm(ref_data.X(:) - rc_data.X(:)) / norm(ref_data.X(:));
-            disp(nrmse);
+            a = sum(conj(rc_data.X(:)) .* ref_data.X(:)) / sum(conj(rc_data.X(:)) .* rc_data.X(:));
+            nrmse = norm(ref_data.X(:) - a*rc_data.X(:)) / norm(ref_data.X(:));
+
             save(rc_path, 'rc_data');
+            zf_err = fftshift(fftn(Ku)) - ref_data.X;
+            zf_err = zf_err(:);
+            zf_err = norm(zf_err);
+            disp(zf_err);
 
+            nrmses(i) = nrmse;
 
+            disp(nrmses);
 
             vis.visualize(flip(rc_data.ppm), rc_data.X, 'reverse', [0, abs(max(rc_data.X,[],'all'))], ref_data.pd, mrsi_path);
         end  
@@ -194,15 +202,15 @@ rc_params.dtol = [1e-2,1e-2];
 rc_params.mu = [10,10];
 rc_params.gu = [2,2];
 rc_params.gl = [2,2];
-rc_params.scheme = 'TGV';
-rc_params.accel = 3;
-lambdas = 4e-3;
-% DWT best 1e-7 - 1e-8
-% HKM best 1e-4 - 1e-5
-% TGV converged at 1e-4, 1/3, 2/3
-lambda_grid = ndgrid(lambdas,lambdas);
-data_paths = {'C:\Users\rayne\PHYS449\Thesis\simulations\setup_1\Axial\slice_1-10'};
-grid_search(data_paths, rc_params, lambda_grid);
+rc_params.scheme = 'DWT';
+rc_params.accel = 5;
+lambdas = logspace(-7,-1,7);
+data_paths = {...
+    'C:\Users\rayne\PHYS449\Thesis\simulations\setup_1\Axial\slice_51-60', ...
+    'C:\Users\rayne\PHYS449\Thesis\simulations\setup_1\Coronal\slice_51-60' ...
+    'C:\Users\rayne\PHYS449\Thesis\simulations\setup_1\Sagittal\slice_51-60', ...
+};
+grid_search(data_paths, rc_params, lambdas);
 
 
 

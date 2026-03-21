@@ -54,7 +54,7 @@ function u = poisson_disc(nx, ny, accel, sp, tol)
 end
 
 function u = sample(Rx, Ry, sp, nx, ny)
-    c = 2;
+    c = 1;
     lx = ceil((nx+1)/2-c):floor((nx+1)/2+c);
     ly = ceil((ny+1)/2-c):floor((ny+1)/2+c);
     u = false(nx,ny);

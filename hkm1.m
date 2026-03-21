@@ -6,10 +6,7 @@ function Krc = hkm1(Ku, U, params)
         [nx, ny] = ind2sub([Nx, Ny], idx);
         rc = Reconstruction();
         Y = Ku(nx,ny,:);
-        Y_norm = norm(Y(:));
-        if Y_norm > 1e-16
-            Y = Y / Y_norm;
-        end
+        Y_norm = norm(Y(:)) + 1e-16;
         Y = Y(:);
         U_line = U(nx,ny,:);
         U_line = U_line(:);
@@ -52,9 +49,6 @@ function Krc = hkm1(Ku, U, params)
         rc.iter_max = 3000;
         rc.admm();
         Xrc(idx,:) = rc.primal{1};
-        if Y_norm > 1e-16
-            Xrc(idx,:) = Xrc(idx,:) * Y_norm;
-        end
         parfor_progress; 
     end
     parfor_progress(0);
