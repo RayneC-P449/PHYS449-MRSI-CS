@@ -1,4 +1,4 @@
-function Krc = khm1(Ku, U, params)
+function Krc = hkm1(Ku, U, params)
     [Nx, Ny, Nt] = size(Ku);
     Xrc = zeros(Nx*Ny,Nt);
     parfor_progress(Nx*Ny); 
@@ -7,12 +7,14 @@ function Krc = khm1(Ku, U, params)
         rc = Reconstruction();
         Y = Ku(nx,ny,:);
         Y_norm = norm(Y(:));
-        Y = Y / Y_norm;
+        if Y_norm > 1e-16
+            Y = Y / Y_norm;
+        end
         Y = Y(:);
         U_line = U(nx,ny,:);
         U_line = U_line(:);
         mem = struct("Y", Y, "U", U_line);
-        L = 80;
+        L = 24;
         mem.L = L;
         K = Nt-L+1;
         [gi, gj] = ndgrid(1:L,1:K);
@@ -47,67 +49,17 @@ function Krc = khm1(Ku, U, params)
         rc.lambda = params.lambda;
         rc.ptol = params.ptol;
         rc.dtol = params.dtol;
-        rc.iter_max = 200;
-        rc.admm(false);
-        Xrc(idx,:) = rc.primal{1} * Y_norm;
+        rc.iter_max = 3000;
+        rc.admm();
+        Xrc(idx,:) = rc.primal{1};
+        if Y_norm > 1e-16
+            Xrc(idx,:) = Xrc(idx,:) * Y_norm;
+        end
         parfor_progress; 
     end
     parfor_progress(0);
     Xrc = reshape(Xrc, [Nx, Ny, Nt]);
     Krc = Xrc;
-    % Xrc = zeros(Nx,Ny,Nt);
-    % for nx = 1:Nx
-    %     for ny = 1:Ny
-    %         disp([nx ny])
-    %         rc = Reconstruction();
-    %         Y = Ku(nx,ny,:);
-    %         Y_norm = norm(Y(:));
-    %         Y = Y / Y_norm;
-    %         Y = Y(:);
-    %         U_line = U(nx,ny,:);
-    %         U_line = U_line(:);
-    %         mem = struct("Y", Y, "U", U_line);
-    %         L = 80;
-    %         mem.L = L;
-    %         K = Nt-L+1;
-    %         [gi, gj] = ndgrid(1:L,1:K);
-    %         mem.g_vect = gi + gj - 1;
-    %         mem.g_vect = mem.g_vect(:);
-    %         idx = 1:Nt;
-    %         mem.c = zeros(Nt,1);
-    %         mem.c(1:L) = idx(1:L);
-    %         mem.c(L+1:K) = L;
-    %         mem.c(K+1:Nt) = L+K-idx(K+1:Nt);
-    %         X = phiH(Y, mem);
-    %         Z = psi(X,mem);
-    %         W = zeros(size(Z));
-    %         prox1 = @(rc) updateX(rc, mem);
-    %         prox2 = @(rc) updateZ(rc, mem);
-    %         ascent1 = @(rc) updateW(rc, mem);
-    %         pres1 = @(rc) get_pres(rc, mem);
-    %         dres1 = @(rc) get_dres(rc, mem);
-    %         fX = @(rc) get_fX(rc, mem);
-    %         fZ = @(rc) get_fZ(rc, mem);
-    %         rc.primal = {X,Z};
-    %         rc.proximal = {prox1, prox2};
-    %         rc.dual = {W};
-    %         rc.ascent = {ascent1};
-    %         rc.pres = {pres1};
-    %         rc.dres = {dres1};
-    %         rc.obj = {fX, fZ};
-    %         rc.rho = params.rho;
-    %         rc.mu = params.mu;
-    %         rc.gu = params.gu;
-    %         rc.gl = params.gl;
-    %         rc.lambda = params.lambda;
-    %         rc.ptol = params.ptol;
-    %         rc.dtol = params.dtol;
-    %         rc.iter_max = 2000;
-    %         rc.admm(true);
-    %         Xrc(nx,ny,:) = rc.primal{1} * Y_norm;
-    %     end
-    % end
-    % Krc = Xrc;
 end
 
 function Y = phi(X,mem)
@@ -156,7 +108,7 @@ function [pres, prel] = get_pres(rc,mem)
 end
 
 function [dres, drel] = get_dres(rc,mem)
-    dres = rc.rho(1) * norm(psiH(rc.primal{2} - rc.primal_prev{2}, mem), 'fro');
+    dres = norm(psiH(rc.primal{2} - rc.primal_prev{2}, mem), 'fro');
     drel = norm(psiH(rc.dual{1}, mem), 'fro');
 end
 

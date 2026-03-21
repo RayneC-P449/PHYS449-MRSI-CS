@@ -33,7 +33,7 @@ function Krc = dwt1(Ku, U, params)
     rc.ptol = params.ptol;
     rc.dtol = params.dtol;
     rc.iter_max = 200;
-    rc.admm(true);
+    rc.admm();
     Xrc = rc.primal{1} * Y_norm;
     mem.U = ones(size(mem.U));
     Krc = phi(Xrc, mem);
@@ -113,7 +113,7 @@ function [pres, prel] = get_pres(rc,mem)
 end
 
 function [dres, drel] = get_dres(rc,mem)
-    dres = rc.rho(1) * norm(psiH(rc.primal{2} - rc.primal_prev{2}, mem), 'fro');
+    dres = norm(psiH(rc.primal{2} - rc.primal_prev{2}, mem), 'fro');
     drel = norm(psiH(rc.dual{1}, mem), 'fro');
 end
 

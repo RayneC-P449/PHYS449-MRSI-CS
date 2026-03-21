@@ -7,7 +7,7 @@ classdef LCMHelper
 
        end
 
-       function out = make_basis(obj)
+       function out = make_basis(obj, path)
             filename_ID = ''; % Will form root of basis file names 
             sequence_name = ''; % Pulse sequence 
             echo_time = '30.'; % ms
@@ -19,7 +19,7 @@ classdef LCMHelper
             autoph_tf = 'false'; % Auto-phase basis functions in LCModel: true; do not auto-scale: false 
             basis_id = '';
             
-            current_folder = uigetdir(); 
+            current_folder = path;
             list_of_cases_struct = dir(current_folder);
             list_of_cases_struct_clean = list_of_cases_struct(~ismember({list_of_cases_struct.name},{'.','..'}));
             list_of_cases = {list_of_cases_struct_clean.name}'; 

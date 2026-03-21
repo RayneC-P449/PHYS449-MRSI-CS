@@ -11,13 +11,11 @@ pd_data = niftiread('data\skeleton\pd.nii');
 label_data = cfg.labels;
 pd_data = pd_data(41:140,59:158,41:140);
 mm_json = jsondecode(fileread('data/macromolecules/mm_json.json'));
-
-
 cfg.mm_list = mm_json.names;
 cfg.mm = mm_json;
 cfg.water = zeros(2,2);
-cfg.water(1,:) = [36000, 63.4E-3];
-cfg.water(2,:) = [43300, 52.6E-3];
+cfg.water(1,:) = [36000, 52.6E-3];
+cfg.water(2,:) = [43300, 63.4E-3];
 phantom = Phantom(cfg);
 seqparams = struct;
 seq_params.sw = 2000;

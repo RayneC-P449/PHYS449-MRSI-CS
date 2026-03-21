@@ -107,16 +107,7 @@ function [Ku,U] = undersample(kspace, accel)
     nslices = 3;
     indices = round(linspace(1,size(U,3),nslices));
     slice(double(permute(U,[2 3 1])), indices,[], []);
-    % for x = 1:nx
-    %     for y = 1:ny
-    %         temp = nnz(U(x,y,:));
-    %         if temp < 100
-    %             U(x,y,randi(nt,1,100-temp)) = 1;
-    %         end
-    %     end
-    % end
     drawnow;
-    disp(rms(Ku,'all') / rms(kspace, 'all'));
 end
 
 function Krc = reconstruct(K, scheme, params, accel)

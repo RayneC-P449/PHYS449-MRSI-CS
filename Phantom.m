@@ -1,4 +1,4 @@
-classdef Phantom < handle
+classdef Phantom
    properties    
       labels
       metabs_list
@@ -10,11 +10,13 @@ classdef Phantom < handle
       mm_T2;
       water_data;
       gyro
+      pd
    end
    methods
        function phantom = Phantom(cfg)
          if nargin > 0
             phantom.labels = cfg.labels;
+            phantom.pd = cfg.pd;
             phantom.metabs_list = cfg.metabs_list;
             metabs_df = cfg.metabs;
             phantom.mm_list = cfg.mm_list;
