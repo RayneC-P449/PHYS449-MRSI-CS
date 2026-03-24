@@ -1,4 +1,4 @@
-function Krc = dwt1(Ku, U, params)
+function [Krc, fval, gval] = dwt1(Ku, U, params)
     rc = Reconstruction();
     Y = Ku;
     Y_norm = norm(Y(:));
@@ -33,7 +33,9 @@ function Krc = dwt1(Ku, U, params)
     rc.ptol = params.ptol;
     rc.dtol = params.dtol;
     rc.iter_max = 200;
-    rc.admm();
+    rc.admm(params.verbose);
+    fval = get_fX(rc, mem);
+    gval = get_fZ(rc, mem);
     Xrc = rc.primal{1} * Y_norm;
     mem.U = ones(size(mem.U));
     Krc = phi(Xrc, mem);
@@ -49,11 +51,11 @@ function out = get_fZ(rc, mem)
 end
 
 function Y = phi(X,mem)
-    Y = mem.U .* ifftn(X) * sqrt(numel(mem.U));
+    Y = mem.U .* ifftn(ifftshift(X)) * sqrt(numel(mem.U));
 end
 
 function X = phiH(Y,mem)
-    X = fftn(mem.U .* Y) / sqrt(numel(mem.U));
+    X = fftshift(fftn(mem.U .* Y)) / sqrt(numel(mem.U));
 end
 
 function Z = psi(X,mem)

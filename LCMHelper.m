@@ -47,8 +47,8 @@ classdef LCMHelper
             fprintf(fileID,'hzpppm=%s\n', sf);
             fprintf(fileID,'deltat=%s\n', dwell_time);
             fprintf(fileID,'nunfil=%s\n', num_complex_pts);
-            baspath = wsl_path(obj, fullfile(pwd, 'simulated', 'basis', 'basis.basis'));
-            pspath = wsl_path(obj, fullfile(pwd, 'simulated', 'basis', 'basis.ps'));
+            baspath = wsl_path(obj, fullfile(path, 'basis.basis'));
+            pspath = wsl_path(obj, fullfile(path, 'basis.ps'));
             fprintf(fileID, 'filbas=''%s''\n', baspath); 
             fprintf(fileID, 'filps=''%s''\n', pspath); 
             fprintf(fileID, 'autosc=.%s.\n', autosc_tf); 
@@ -68,7 +68,7 @@ classdef LCMHelper
                 if ext ~= ".RAW"
                     continue
                 end
-                rawpath = wsl_path(obj, fullfile(pwd, 'simulated', 'basis', raw_name) + ".RAW");
+                rawpath = wsl_path(obj, fullfile(path, raw_name) + ".RAW");
                 fprintf(fileID,'$nmeach\n');
                 fprintf(fileID,'filraw=''%s''\n', rawpath);
                 fprintf(fileID,'metabo=''%s''\n', raw_name);
@@ -97,7 +97,16 @@ classdef LCMHelper
            fprintf(ctrl, 'filtab=''%s''\n', strrep(filout, '.ps','.table'));
            fprintf(ctrl, 'ltable=%s\n', '7');
            fprintf(ctrl, 'nratio=%s\n', '0');
-           fprintf(ctrl, 'nsimul=%s\n', '0');
+           fprintf(ctrl, 'NAMREL=%s\n', 'NAA');
+           fprintf(ctrl, 'NOMIT=%s\n', '8');
+           fprintf(ctrl, 'CHOMIT(1)=%s\n', 'Lip13a');
+           fprintf(ctrl, 'CHOMIT(2)=%s\n', 'Lip13b');
+           fprintf(ctrl, 'CHOMIT(3)=%s\n', 'Lip13c');
+           fprintf(ctrl, 'CHOMIT(4)=%s\n', 'Lip13d');
+           fprintf(ctrl, 'CHOMIT(5)=%s\n', 'Lip09');
+           fprintf(ctrl, 'CHOMIT(6)=%s\n', 'Lip20');
+           fprintf(ctrl, 'CHOMIT(7)=%s\n', '-CrCH2');
+           fprintf(ctrl, 'CHOMIT(8)=%s\n', 'Gua');
            fprintf(ctrl, '$END\n');
            fclose(ctrl);
        end

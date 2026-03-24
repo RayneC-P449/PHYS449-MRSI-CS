@@ -6,10 +6,16 @@ classdef Visualizer
        function obj = Visualizer()
        end
 
-       function visualize(~, x, Y, xdir, ylimits, img, path)
-           f = figure('Visible', 'off');
+       function visualize(~, x, Y, xdir, ylimits, img, path,toshow)
+           if toshow
+               f = figure('Visible', 'on');
+           else
+               f = figure('Visible', 'off');
+           end
            ax_bg = axes('Units','normalized','Position',[0 0 1 1]);
-           imshow(img, 'Parent', ax_bg);
+           if numel(img) ~= 0
+               imshow(img, 'Parent', ax_bg);
+           end
            axis(ax_bg, 'off');
            set(ax_bg,'DataAspectRatioMode','auto')
            voxrange = size(Y, [1,2]);
@@ -35,8 +41,10 @@ classdef Visualizer
                    set(ax,'XDir', xdir);
                end
            end
-           saveas(f, path);
-           close(f);
+           if ~toshow
+               saveas(f, path);
+               close(f);
+           end
        end
    end
 end

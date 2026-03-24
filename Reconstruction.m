@@ -55,7 +55,8 @@ classdef Reconstruction < handle
                         rc.rho(i) = rc.rho(i) / rc.gl(i);
                     end
                     if verbose
-                        fprintf("f = %.5e\n", rc.obj{1}(rc))
+                        fprintf("f = %.5e\n", rc.obj{1}(rc));
+                        fprintf("g = %.5e\n", rc.obj{2}(rc));
                         fprintf('pres_rel %d = %2.5f\n', i, pres_rel);
                         fprintf('dres_rel %d = %2.5f\n', i, dres_rel);
                     end

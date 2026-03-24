@@ -6,7 +6,7 @@ classdef SignalModel
        function sm = SignalModel()
 
        end
-       function [kspace, t, ppm] = extract_kspace(obj, metab_bases, seq_params, phantom, zslice, voxrange, sigma, beta, B0_map)
+       function [kspace, t, ppm] = extract_kspace(obj, metab_bases, seq_params, phantom, zslice, voxrange, snr, beta, B0_map)
            kspace_dims = [voxrange, seq_params.n];
            kspace = zeros(kspace_dims);
            t_vect = metab_bases{1}.t;
@@ -37,12 +37,12 @@ classdef SignalModel
                    mm_fid = reshape(mm_bases{m}, 1, 1, []);
                    bases_fid = bases_fid + phantom.mm_data(:,:,sc,m,1) .* mm_fid;
                end
-               Aw = rand(1,5);
-               Aw = Aw / sum(Aw);
-               for w = 1:5
-                   water_fid = reshape(water_bases{w}, 1, 1, []);
-                   bases_fid = bases_fid + Aw(w) * (phantom.water_data(:,:,sc,1) .* water_fid) .* exp(reshape(-t_vect,1,1,[]) ./ phantom.water_data(:,:,sc,2));
-               end
+               % Aw = rand(1,5);
+               % Aw = Aw / sum(Aw);
+               % for w = 1:5
+               %     water_fid = reshape(water_bases{w}, 1, 1, []);
+               %     bases_fid = bases_fid + Aw(w) * (phantom.water_data(:,:,sc,1) .* water_fid) .* exp(reshape(-t_vect,1,1,[]) ./ phantom.water_data(:,:,sc,2));
+               % end
            end
            for vx = 1:voxrange(1)
                for vy = 1:voxrange(2)
@@ -55,7 +55,12 @@ classdef SignalModel
                    kspace(vx,vy,:) = temp;         
                 end
            end
-           kspace = kspace / (Nx * Ny);
+           spec = fftshift(fftn(kspace));
+           Nt = seq_params.n;
+           VxVy = voxrange(1) * voxrange(2);
+           noise = (max(abs(spec(:))) / snr) * (randn(voxrange(1), voxrange(2), Nt) + 1i*randn(voxrange(1), voxrange(2), Nt)) / sqrt(VxVy*Nt*numel(zslice));
+           kspace = kspace + noise;
+           kspace = kspace / (Nx*Ny);
            t = metab_bases{1}.t;
            ppm = metab_bases{1}.ppm;
        end

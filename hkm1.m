@@ -7,11 +7,12 @@ function Krc = hkm1(Ku, U, params)
         rc = Reconstruction();
         Y = Ku(nx,ny,:);
         Y_norm = norm(Y(:)) + 1e-16;
+        Y = Y / Y_norm;
         Y = Y(:);
         U_line = U(nx,ny,:);
         U_line = U_line(:);
         mem = struct("Y", Y, "U", U_line);
-        L = 24;
+        L = 40;
         mem.L = L;
         K = Nt-L+1;
         [gi, gj] = ndgrid(1:L,1:K);
@@ -48,7 +49,7 @@ function Krc = hkm1(Ku, U, params)
         rc.dtol = params.dtol;
         rc.iter_max = 3000;
         rc.admm();
-        Xrc(idx,:) = rc.primal{1};
+        Xrc(idx,:) = rc.primal{1} * Y_norm;
         parfor_progress; 
     end
     parfor_progress(0);

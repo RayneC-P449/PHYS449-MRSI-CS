@@ -7,7 +7,7 @@ function phantom = load_phantom()
     cfg.metabs_list = ["Asp","NAAG","Cr","PCr","GPC","PCh", ...
         "Glu","Gln","GABA","GSH","NAA","Tau","PE", "Lac", "Ins"];
     cfg.labels = niftiread('data/skeleton/labels.nii');
-    slices = {31:150, 49:168, 31:150};
+    slices = {50:130,78:138, 50:130};
     cfg.labels = cfg.labels(slices{:});
     cfg.pd = niftiread('data\skeleton\pd.nii');
     cfg.pd = cfg.pd(slices{:});
@@ -20,18 +20,6 @@ function phantom = load_phantom()
     phantom = Phantom(cfg);
 end
 
-function mbasis = load_mbasis(phantom, seq_params)
-    mbasis = cell(numel(phantom.metabs_list),1);
-    for l=1:numel(phantom.metabs_list)
-       metab = phantom.metabs_list(l);
-       spin_sys = ['sys' char(metab)];
-       load('spinSystems.mat', spin_sys);
-       seq_params.sys = eval(spin_sys);
-       basis = sim_press(seq_params.n, seq_params.sw, seq_params.B0, seq_params.lw, seq_params.sys, seq_params.tau1, seq_params.tau2);
-       basis.fids = basis.fids;
-       mbasis{l} = basis;
-    end
-end
 
 function permuted_phantom = permute_phantom(phantom, permutation)
     permuted_phantom = phantom;
@@ -51,7 +39,7 @@ function simulate(setup_params_list, orientations, permutations)
         [~,~] = mkdir(setup_path);
         phantom = load_phantom();
         seq_params = setup_params.seq_params;
-        mbasis = load_mbasis(phantom, seq_params);
+        mbasis = load_mbasis(phantom.metabs_list, seq_params, seq_params.sequence);
         basis_path = fullfile(setup_path, sprintf('%s', 'basis'));
         [~,~] = mkdir(basis_path);
         for m = 1:numel(mbasis)
@@ -60,8 +48,7 @@ function simulate(setup_params_list, orientations, permutations)
         end
         lcm = LCMHelper();
         lcm.make_basis(basis_path);
-        
-        voxels = setup_params.voxels; sigma = setup_params.sigma; 
+        voxels = setup_params.voxels; snr = setup_params.snr; 
         beta = setup_params.beta; B0_map = setup_params.B0_map;
         slice_thickness = setup_params.slice_thickness;
         sm = SignalModel();
@@ -73,10 +60,10 @@ function simulate(setup_params_list, orientations, permutations)
             permuted_phantom = permute_phantom(phantom, permutation);
             for start_idx = 1 : slice_thickness : size(permuted_phantom.labels,3) - slice_thickness + 1
                 end_idx = start_idx + slice_thickness - 1;
-                slice_path = fullfile(orientation_path, sprintf('%s_%d-%d','slice',start_idx,end_idx));
+                slice_path = fullfile(orientation_path, sprintf('%s_%s_%d-%d',orientation,'slice',start_idx,end_idx));
                 [~,~] = mkdir(slice_path);
                 slice = start_idx:end_idx;
-                [kspace, t, ppm] = sm.extract_kspace(mbasis, seq_params, permuted_phantom, slice, voxels, sigma, beta, B0_map);
+                [kspace, t, ppm] = sm.extract_kspace(mbasis, seq_params, permuted_phantom, slice, voxels, snr, beta, B0_map);
                 data = struct();
                 data.K = kspace; data.t = t; data.ppm = ppm; data.X = fftshift(fftn(kspace));
                 data.setup_params = setup_params;
@@ -88,7 +75,7 @@ function simulate(setup_params_list, orientations, permutations)
                 fig = figure('Visible','off');
                 pd_img = im2gray(pd_slice);
                 imshow(pd_img);
-                pd_img_path = fullfile(slice_path, 'pd.png');
+                pd_img_path = fullfile(slice_path, 'MRI.png');
                 saveas(fig, pd_img_path);
                 close(fig);
                 labels_slice_idx = round((start_idx + end_idx) / 2);
@@ -108,111 +95,32 @@ function simulate(setup_params_list, orientations, permutations)
                 saveas(fig, labels_img_path);
                 close(fig);
                 fprintf('Simulated %s\n', slice_path);
+                vis = Visualizer();
+                mrsi_path = fullfile(slice_path, 'MRSI.png');
+                vis.visualize(flip(data.ppm), data.X, 'reverse', [0, max(abs(data.X),[],'all')], data.pd, mrsi_path, false);
+                fig = figure('Visible', 'off');
+                plot(flip(data.ppm),squeeze(abs(data.X(8,8,:))));
+                spec_path = fullfile(slice_path, 'MRS.png');
+                saveas(fig, spec_path);
             end
         end
     end
 end
 
-% seq_params = struct();
-% seq_params.sw = 2000;
-% seq_params.B0 = 3;
-% seq_params.lw = 2;
-% seq_params.te = 30E-3;
-% seq_params.tau1 = seq_params.te/4;
-% seq_params.tau2 = seq_params.te/4;
-% seq_params.n = 1024;
-% setup_params_list = {struct('voxels', [16, 16], 'sigma', 0, 'beta', 0, 'B0_map', ones([16,16]), 'slice_thickness', 10, 'seq_params', seq_params)};
-% orientations = {'Axial', 'Coronal', 'Sagittal'};
-% permutations = {[1,2,3], [1,3,2], [2,3,1]};
-% 
-% simulate(setup_params_list, orientations, permutations);
-% 
-% 
-% 
-function [Krc, Ku] = reconstruct(rc_params, data_folder)
-    data_path = fullfile(data_folder, 'data.mat');
-    data = load(data_path).data;
-    K = data.K;
-    us = Undersampler();
-    [Ku, U] = us.undersample(K, rc_params.accel, 'poisson_disc');
-    fprintf('Undersampled at accel: %.3f\n', numel(U) / nnz(U));
-    switch rc_params.scheme
-        case 'FULL'
-            Krc = K;
-        case 'ZF'
-            Krc = Ku;
-        case 'DWT'
-            Krc = dwt1(Ku, U, rc_params);
-        case 'TGV'
-            Krc = tgv2(Ku, U, rc_params);
-        case 'HKM'
-            Krc = hkm1(Ku, U, rc_params);
-    end
-end
+seq_params = struct();
+seq_params.sw = 2000;
+seq_params.B0 = 3;
+seq_params.lw = 2;
+seq_params.te = 30E-3;
+seq_params.tau1 = seq_params.te/4;
+seq_params.tau2 = seq_params.te/4;
+seq_params.n = 1024;
+seq_params.sequence = 'press';
+setup_params_list = {struct('voxels', [16, 16], 'snr', 30, 'beta', 0, 'B0_map', ones([16,16]), 'slice_thickness', 10, 'seq_params', seq_params)};
+orientations = {'Axial', 'Coronal', 'Sagittal'};
+permutations = {[1,2,3], [1,3,2], [2,3,1]};
 
-
-function grid_search(data_folders, rc_params, lambdas)
-    for idx = 1:numel(lambdas)
-        rc_params.lambda = lambdas(idx);
-        fprintf("λ = %.5e\n", rc_params.lambda);
-        nrmses = zeros(numel(data_folders),1);
-        for i = 1:numel(data_folders)
-            data_folder = data_folders{i};
-            [Krc, Ku] = reconstruct(rc_params, data_folder);
-    
-            accel_path = fullfile(data_folder, sprintf('%s_%d', 'accel', round(rc_params.accel)));
-            [~,~] = mkdir(accel_path);
-            vis = Visualizer();
-            scheme_path = fullfile(accel_path, rc_params.scheme);
-            [~,~] = mkdir(scheme_path);
-            params_path = fullfile(scheme_path, num2str(rc_params.lambda, '%.5e'));
-            [~,~] = mkdir(params_path);
-            mrsi_path = fullfile(params_path, 'MRSI.png');
-            rc_path = fullfile(params_path, 'rc_data.mat');
-            data_path = fullfile(data_folder, 'data.mat');
-            ref_data = load(data_path).data;
-            rc_data = struct();
-
-            rc_data.K = Krc;
-            rc_data.X = fftshift(fftn(Krc));
-            rc_data.t = ref_data.t;
-            rc_data.ppm = ref_data.ppm;
-            rc_data.params = rc_params;
-            a = sum(conj(rc_data.X(:)) .* ref_data.X(:)) / sum(conj(rc_data.X(:)) .* rc_data.X(:));
-            nrmse = norm(ref_data.X(:) - a*rc_data.X(:)) / norm(ref_data.X(:));
-
-            save(rc_path, 'rc_data');
-            zf_err = fftshift(fftn(Ku)) - ref_data.X;
-            zf_err = zf_err(:);
-            zf_err = norm(zf_err);
-            disp(zf_err);
-
-            nrmses(i) = nrmse;
-
-            disp(nrmses);
-
-            vis.visualize(flip(rc_data.ppm), rc_data.X, 'reverse', [0, abs(max(rc_data.X,[],'all'))], ref_data.pd, mrsi_path);
-        end  
-    end
-end
-rc_params = struct();
-rc_params.rho = [1,1];
-rc_params.ptol = [1e-2,1e-2];
-rc_params.dtol = [1e-2,1e-2];
-rc_params.mu = [10,10];
-rc_params.gu = [2,2];
-rc_params.gl = [2,2];
-rc_params.scheme = 'DWT';
-rc_params.accel = 5;
-lambdas = logspace(-7,-1,7);
-data_paths = {...
-    'C:\Users\rayne\PHYS449\Thesis\simulations\setup_1\Axial\slice_51-60', ...
-    'C:\Users\rayne\PHYS449\Thesis\simulations\setup_1\Coronal\slice_51-60' ...
-    'C:\Users\rayne\PHYS449\Thesis\simulations\setup_1\Sagittal\slice_51-60', ...
-};
-grid_search(data_paths, rc_params, lambdas);
-
-
+simulate(setup_params_list, orientations, permutations);
 
 
 

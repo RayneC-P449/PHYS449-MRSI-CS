@@ -22,7 +22,7 @@ classdef Undersampler
            % nslices = 3;
            % indices = round(linspace(1,size(U,3),nslices));
            % slice(double(permute(U,[2 3 1])), indices,[], []);
-           drawnow;
+           % drawnow;
        end
 
    end
@@ -54,7 +54,7 @@ function u = poisson_disc(nx, ny, accel, sp, tol)
 end
 
 function u = sample(Rx, Ry, sp, nx, ny)
-    c = 1;
+    c = 2;
     lx = ceil((nx+1)/2-c):floor((nx+1)/2+c);
     ly = ceil((ny+1)/2-c):floor((ny+1)/2+c);
     u = false(nx,ny);
