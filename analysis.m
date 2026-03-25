@@ -1,6 +1,6 @@
 clear;
 addpath(genpath('../FID-A-master'));
-accel = 2;
+accel = 4;
 rc_params = struct();
 rc_params.rho = [1,1];
 rc_params.ptol = [1e-3,1e-3];
@@ -19,8 +19,8 @@ data_paths = {...
 };
 dwtmode('per','nodisp');
 dwtmode;
-method = @tv_dwt;
-method_name = 'TV-W_f';
+method = @hkm1;
+method_name = 'ZF';
 analyses_path = fullfile(pwd,'analyses');
 setup = 'setup_1';
 basis_path = fullfile(pwd,'simulations',setup,'basis','basis.basis');

@@ -1,0 +1,72 @@
+ LCModel (Version 6.3-1R)
+  
+
+$$CONC 25 lines in following concentration table = NCONC+1
+    Conc.  %SD   /NAA   Metabolite                                         
+    8.357  29%   0.995 Asp                                                 
+    3.616  66%   0.431 Cr                                                  
+   14.971  11%   1.783 GABA                                                
+    2.142  19%   0.255 GPC                                                 
+    6.866  14%   0.818 GSH                                                 
+    7.840  26%   0.934 Gln                                                 
+    7.017  29%   0.836 Glu                                                 
+   12.946  10%   1.542 Ins                                                 
+    0.000 999%   0.000 Lac                                                 
+    8.397  10%   1.000 NAA                                                 
+    0.000 999%   0.000 NAAG                                                
+    0.000 999%   0.000 PCh                                                 
+    8.329  30%   0.992 PCr                                                 
+    8.986  26%   1.070 PE                                                  
+    1.845  87%   0.220 Tau                                                 
+    2.142  19%   0.255 GPC+PCh                                             
+    8.397  10%   1.000 NAA+NAAG                                            
+   11.946   9%   1.423 Cr+PCr                                              
+   14.857  13%   1.769 Glu+Gln                                             
+    4.899  49%   0.583 MM09                                                
+    0.000 999%   0.000 MM20                                                
+    3.011 135%   0.359 MM12                                                
+    0.000 999%   0.000 MM14                                                
+   17.257  27%   2.055 MM17                                                
+
+$$MISC  6 lines in following misc. output table
+  FWHM = 0.031 ppm    S/N =   5                                            
+  Data shift = 0.000 ppm                                                   
+  Ph: 158 deg     -39.9 deg/ppm                                            
+  alphaB,S = 6.7E+00,   1.3E+01                                            
+   28 spline knots.   Ns = 5(1)                                            
+   1 inflections.     2 extrema                                            
+
+$$DIAG  5 lines in following diagnostic table:
+   1 info      STARTV 20                                                  
+   3 info's    TWOREG  8                                                  
+   2 info's    RFALSI  4                                                  
+   1 info      TWOREG  9                                                  
+   1 info      FINOUT  9                                                  
+
+$$INPU 26 lines in following table of input changes:
+CHOMIT(8)=Gua                                                             
+CHOMIT(7)=-CrCH2                                                          
+CHOMIT(6)=Lip20                                                           
+CHOMIT(5)=Lip09                                                           
+CHOMIT(4)=Lip13d                                                          
+CHOMIT(3)=Lip13c                                                          
+CHOMIT(2)=Lip13b                                                          
+CHOMIT(1)=Lip13a                                                          
+NOMIT=8                                                                   
+NAMREL=NAA                                                                
+nratio=0                                                                  
+ltable=7                                                                  
+filtab='c/Users/rayne/PHYS449/Thesis/analyses/set                         
+   up_1/HKM/accel_4/Coronal_slice_21-30/lcm/9_8.t                         
+   able'                                                                  
+filps='c/Users/rayne/PHYS449/Thesis/analyses/setu                         
+   p_1/HKM/accel_4/Coronal_slice_21-30/lcm/9_8.ps                         
+   '                                                                      
+filraw='c/Users/rayne/PHYS449/Thesis/analyses/set                         
+   up_1/HKM/accel_4/Coronal_slice_21-30/lcm/9_8.R                         
+   AW'                                                                    
+filbas='c/Users/rayne/PHYS449/Thesis/simulations/                         
+   setup_1/basis/basis.basis'                                             
+hzpppm=127.731000                                                         
+deltat=0.000500                                                           
+nunfil=1024                                                               

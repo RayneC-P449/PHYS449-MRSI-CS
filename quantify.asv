@@ -1,9 +1,9 @@
 clear;
 addpath(genpath('../FID-A-master'));
-accel = 2;
-method_name = 'ZF';
+accel = 4;
+method_name = 'HKM';
 analyses_path = fullfile(pwd,'analyses');
-setup = 'setup_2';
+setup = 'setup_1';
 method_path = fullfile(analyses_path, setup, method_name, sprintf('accel_%d',accel));
 full_path = fullfile(analyses_path,setup, 'FULL');
 
@@ -19,15 +19,17 @@ for k = 1:numel(data_folders)
         NAA_idx = 11;
         nrmse = method_result.nrmse;
         
-        full_conc = full_result.concs / sum(full_result.concs(:,:,NAA_idx),'all');
-        method_conc = method_result.concs / sum(method_result.concs(:,:,NAA_idx),'all');
+        full_conc = full_result.concs / sum(full_result.concs(:,:,:),'all');
+        method_conc = method_result.concs / sum(method_result.concs(:,:,:),'all');
         
-
+       
         
+        fprintf('%.7f', squeeze(full_conc(1,1,:)).');
+        disp(squeeze(method_conc(1,1,:)).');
         conc_err = abs(full_conc - method_conc);
         conc_err = mean(conc_err,'all');
-        disp(conc_err);
-        disp(method_result.nrmse);
+        % disp(conc_err);
+        % vis.visualize(linspace(0,1,size(Xu,3)),Xu,'reverse',[0,max(abs(Xu(:)))],'','',true);
         
     end
 end

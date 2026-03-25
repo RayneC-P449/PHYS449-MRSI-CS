@@ -51,7 +51,7 @@ for i = 1:numel(lambdas)
         K = data.K;
         us = Undersampler();
         [Ku, U] = us.undersample(K, accel, 'poisson_disc');
-        Krc = method(Ku, U, rc_params);
+        % Krc = method(Ku, U, rc_params);
         % disp(numel(U)/nnz(U));
         % Krc = Ku;
         Xrc = fftshift(fftn(Krc));

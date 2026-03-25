@@ -1,6 +1,6 @@
 clear;
 addpath(genpath('../FID-A-master'));
-accel = 2;
+accel = 4;
 method_name = 'HKM';
 analyses_path = fullfile(pwd,'analyses');
 setup = 'setup_1';
@@ -19,15 +19,23 @@ for k = 1:numel(data_folders)
         NAA_idx = 11;
         nrmse = method_result.nrmse;
         
-        full_conc = full_result.concs / sum(full_result.concs(:,:,NAA_idx),'all');
-        method_conc = method_result.concs / sum(method_result.concs(:,:,NAA_idx),'all');
-        
+        % full_conc = full_result.concs / sum(full_result.concs(:,:,:),'all');
+        % method_conc = method_result.concs / sum(method_result.concs(:,:,:),'all');
 
+        full_conc = full_result.concs;
+        method_conc = method_result.concs;
         
+       
+        fprintf('\n')
+        fprintf('%3.7f ', squeeze(full_conc(4,4,:)).');
+        fprintf('\n');
+        fprintf('%3.7f ', squeeze(method_conc(4,4,:)).');
         conc_err = abs(full_conc - method_conc);
         conc_err = mean(conc_err,'all');
         % disp(conc_err);
-        disp(method_result.nrmse);
+        % vis.visualize(linspace(0,1,size(Xu,3)),Xu,'reverse',[0,max(abs(Xu(:)))],'','',true);
+        figure();
+        contourf(method_conc(:,:,11));
         
     end
 end
