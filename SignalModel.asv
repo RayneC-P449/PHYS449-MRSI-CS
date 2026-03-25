@@ -28,6 +28,7 @@ classdef SignalModel
            y = linspace(-0.5, 0.5, Ny+1); ky = -voxrange(2)/2:1:voxrange(2)/2-1;
            y = y(1:end-1);
            bases_fid = zeros(Nx,Ny,seq_params.n);
+           water_fid = zeros(Nx,Ny,seq_params.n);
            for sc = zslice
                for l = 1:numel(phantom.metabs_list)
                    metab_fid = reshape(metab_bases{l}.fids, 1, 1, []);
@@ -37,13 +38,15 @@ classdef SignalModel
                    mm_fid = reshape(mm_bases{m}, 1, 1, []);
                    bases_fid = bases_fid + phantom.mm_data(:,:,sc,m,1) .* mm_fid;
                end
-               % Aw = rand(1,5);
-               % Aw = Aw / sum(Aw);
-               % for w = 1:5
-               %     water_fid = reshape(water_bases{w}, 1, 1, []);
-               %     bases_fid = bases_fid + Aw(w) * (phantom.water_data(:,:,sc,1) .* water_fid) .* exp(reshape(-t_vect,1,1,[]) ./ phantom.water_data(:,:,sc,2));
-               % end
+               
+               Aw = rand(1,5);
+               Aw = Aw / sum(Aw);
+               for w = 1:5
+                   water = reshape(water_bases{w}, 1, 1, []);
+                   water_fid = water_basis + Aw(w) * (phantom.water_data(:,:,sc,1) .* water_fid) .* exp(reshape(-t_vect,1,1,[]) ./ phantom.water_data(:,:,sc,2));
+               end
            end
+           wspace = zeros(size(kspace));
            for vx = 1:voxrange(1)
                for vy = 1:voxrange(2)
                    phase_x = squeeze(kx(vx) * x);
@@ -52,14 +55,22 @@ classdef SignalModel
                    temp = temp .* exp(1i*2*pi*phase_x.');
                    temp = temp .* exp(1i*2*pi*phase_y);
                    temp = sum(sum(temp,1),2);
-                   kspace(vx,vy,:) = temp;         
+                   kspace(vx,vy,:) = temp;    
+                   temp = bases_fid;
+                   temp = temp .* exp(1i*2*pi*phase_x.');
+                   temp = temp .* exp(1i*2*pi*phase_y);
+                   temp = sum(sum(temp,1),2);
+                   kspace(vx,vy,:) = temp;    
+    
                 end
            end
            spec = fftshift(fftn(kspace));
            Nt = seq_params.n;
            VxVy = voxrange(1) * voxrange(2);
-           noise = (me(abs(spec(:))) / snr) * (randn(voxrange(1), voxrange(2), Nt) + 1i*randn(voxrange(1), voxrange(2), Nt)) / sqrt(VxVy*Nt);
-           kspace = kspace + noise;
+           if snr ~= Inf
+               noise = (max(abs(spec(:))) / snr) * (randn(voxrange(1), voxrange(2), Nt) + 1i*randn(voxrange(1), voxrange(2), Nt)) / sqrt(VxVy*Nt*numel(zslice));
+               kspace = kspace + noise;
+           end
            kspace = kspace / (Nx*Ny);
            t = metab_bases{1}.t;
            ppm = metab_bases{1}.ppm;

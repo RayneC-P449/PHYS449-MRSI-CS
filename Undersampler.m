@@ -14,7 +14,7 @@ classdef Undersampler
            switch method
                case 'poisson_disc'
                     for nt = 1:Nt
-                        U(:,:,nt) = poisson_disc(Nx,Ny,accel,20,0.05);
+                        U(:,:,nt) = poisson_disc(Nx,Ny,accel,30,0.05);
                     end
            end
            Ku = U .* K;

@@ -35,7 +35,7 @@ function simulate(setup_params_list, orientations, permutations)
     [~,~] = mkdir(simulation_path);
     for i = 1:numel(setup_params_list)
         setup_params = setup_params_list{i};
-        setup_path = fullfile(simulation_path, sprintf('%s_%d', 'setup', i));
+        setup_path = fullfile(simulation_path, sprintf('%s_%d', 'setup', setup_params.num));
         [~,~] = mkdir(setup_path);
         phantom = load_phantom();
         seq_params = setup_params.seq_params;
@@ -116,7 +116,7 @@ seq_params.tau1 = seq_params.te/4;
 seq_params.tau2 = seq_params.te/4;
 seq_params.n = 1024;
 seq_params.sequence = 'press';
-setup_params_list = {struct('voxels', [16, 16], 'snr', 30, 'beta', 0, 'B0_map', ones([16,16]), 'slice_thickness', 10, 'seq_params', seq_params)};
+setup_params_list = {struct('voxels', [16, 16], 'snr', Inf, 'beta', 0, 'B0_map', ones([16,16]), 'slice_thickness', 10, 'seq_params', seq_params, 'num', 2)};
 orientations = {'Axial', 'Coronal', 'Sagittal'};
 permutations = {[1,2,3], [1,3,2], [2,3,1]};
 

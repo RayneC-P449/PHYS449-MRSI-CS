@@ -64,6 +64,7 @@ function Z = psi(X,mem)
         
         for ny = 1:mem.X_dims(2)
             u = X(nx,ny,:);
+            
             Z(nx,ny,:) = wavedec(u(:), 4, 'db4');
         end
     end
@@ -96,7 +97,7 @@ function X = updateX(rc, mem)
     A = @(x) A_pcg(x, mem, rc.rho(1));
     X = rc.primal{1};
     x = X(:);
-    [x, flag] = pcg(A,rhs,1e-8,50,[],[],x);
+    [x, flag] = pcg(A,rhs,1e-8,200,[],[],x);
     X = reshape(x, size(X));
 end
 

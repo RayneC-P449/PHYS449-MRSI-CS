@@ -47,7 +47,7 @@ function Krc = hkm1(Ku, U, params)
         rc.lambda = params.lambda;
         rc.ptol = params.ptol;
         rc.dtol = params.dtol;
-        rc.iter_max = 3000;
+        rc.iter_max = 1000;
         rc.admm();
         Xrc(idx,:) = rc.primal{1} * Y_norm;
         parfor_progress; 
