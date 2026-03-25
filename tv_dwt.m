@@ -11,6 +11,7 @@ function [Krc, fval, gval] = dwt1(Ku, U, params)
     mem.psi_dims = [Nx,Ny,numel(z)];
     Z = psi(X,mem);
     W1 = zeros(size(Z));
+
     prox1 = @(rc) updateX(rc, mem);
     prox2 = @(rc) updateZ(rc, mem);
     prox3 = @(rc) updateG(rc, mem);
@@ -24,13 +25,14 @@ function [Krc, fval, gval] = dwt1(Ku, U, params)
     fZ = @(rc) get_fZ(rc, mem);
 
     G = grad3(X,mem);
+    W2 = zeros(size(G));
     rc.primal = {X,Z,G};
     rc.proximal = {prox1, prox2, prox3};
-    rc.dual = {W1};
+    rc.dual = {W1,W2};
     rc.ascent = {ascent1, ascent2};
     rc.pres = {pres1, pres2};
     rc.dres = {dres1, dres2};
-    rc.obj = {fX, fZ, fG};
+    rc.obj = {fX, fZ};
     rc.rho = params.rho;
     rc.mu = params.mu;
     rc.gu = params.gu;
@@ -122,7 +124,7 @@ function W = updateW1(rc, mem)
 end
 
 function W = updateW2(rc, mem)
-    W = rc.dual{2} + psi(rc.primal{1},mem) - rc.primal{3};
+    W = rc.dual{2} + grad3(rc.primal{1},mem) - rc.primal{3};
 end
 
 
@@ -154,7 +156,7 @@ function V = grad3(X,mem)
     V(:,:,:,3) = X(:,:,[2:end 1],:) - X;
 end
 
-function X = div3(V)
+function X = div3(V,mem)
     X = zeros(size(V,1), size(V,2), size(V,3));
     X = X + V(:,:,:,1) - V([end 1:end-1],:,:,1);
     X = X + V(:,:,:,2) - V(:,[end 1:end-1],:,2);

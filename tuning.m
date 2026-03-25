@@ -1,15 +1,15 @@
 clear;
-accel = 2;
-setup ='setup_2';
+accel = 4;
+setup ='setup_1';
 data_paths = {...
-    'C:\Users\rayne\PHYS449\Thesis\simulations\setup_2\Axial\Axial_slice_1-10', ...
-    'C:\Users\rayne\PHYS449\Thesis\simulations\setup_2\Coronal\Coronal_slice_51-60', ...
-    'C:\Users\rayne\PHYS449\Thesis\simulations\setup_2\Sagittal\Sagittal_slice_31-40', ...
+    'C:\Users\rayne\PHYS449\Thesis\simulations\setup_1\Axial\Axial_slice_1-10', ...
+    'C:\Users\rayne\PHYS449\Thesis\simulations\setup_1\Coronal\Coronal_slice_51-60', ...
+    'C:\Users\rayne\PHYS449\Thesis\simulations\setup_1\Sagittal\Sagittal_slice_31-40', ...
 };
 dwtmode('per','nodisp');
 dwtmode;
-method = @tv_dwt;
-method_name = 'TV-W_f';
+method = @hkm1;
+method_name = 'HKM';
 analyses_path = fullfile(pwd,'analyses');
 setup_path = fullfile(analyses_path, setup);
 rc_params = struct();
@@ -27,8 +27,12 @@ method_path = fullfile(setup_path, method_name);
 accel_path = fullfile(method_path, sprintf('accel_%d', accel));
 [~,~] = mkdir(accel_path);
 tune_path = fullfile(accel_path, 'tune.mat');
-% lambdas = num2cell(logspace(-9,-1,20));
-lambdas = {[1e-6, 1e-6]};
+lambdas = num2cell(logspace(-9,-2,20));
+% a = logspace(-7, -4, 3);
+% b = logspace(-7, -4, 3);
+% [A, B] = ndgrid(a, b);
+% lambdas = num2cell([A(:), B(:)], 2);
+% lambdas = {[1e-6, 1e-6]};
 tune = struct();
 tune.lambdas = {};    
 tune.nrmse = [];

@@ -1,0 +1,70 @@
+ LCModel (Version 6.3-1R)
+  
+
+$$CONC 25 lines in following concentration table = NCONC+1
+    Conc.  %SD   /NAA   Metabolite                                         
+   23.653  19%   0.225 Asp                                                 
+   41.632  10%   0.397 Cr                                                  
+   11.592  34%   0.110 GABA                                                
+   15.246   6%   0.145 GPC                                                 
+    5.655  31% 5.4E-02 GSH                                                 
+   34.729  12%   0.331 Gln                                                 
+   84.567   5%   0.806 Glu                                                 
+   55.555   4%   0.529 Ins                                                 
+    0.000 999%   0.000 Lac                                                 
+  104.935   3%   1.000 NAA                                                 
+   31.051  10%   0.296 NAAG                                                
+    0.000 999%   0.000 PCh                                                 
+   18.293  23%   0.174 PCr                                                 
+    5.761  78% 5.5E-02 PE                                                  
+   21.281  14%   0.203 Tau                                                 
+   15.246   6%   0.145 GPC+PCh                                             
+  135.986   3%   1.296 NAA+NAAG                                            
+   59.925   4%   0.571 Cr+PCr                                              
+  119.296   4%   1.137 Glu+Gln                                             
+   62.382   5%   0.594 MM09                                                
+  316.709   7%   3.018 MM20                                                
+   75.519  18%   0.720 MM12                                                
+   97.335  16%   0.928 MM14                                                
+  207.401   7%   1.976 MM17                                                
+
+$$MISC  6 lines in following misc. output table
+  FWHM = 0.023 ppm    S/N =  28                                            
+  Data shift = 0.000 ppm                                                   
+  Ph:-178 deg       4.1 deg/ppm                                            
+  alphaB,S = 6.7E+00,   1.8E+01                                            
+   28 spline knots.   Ns = 5(1)                                            
+   2 inflections.     1 extrema                                            
+
+$$DIAG  3 lines in following diagnostic table:
+   1 info      STARTV 20                                                  
+   2 info's    RFALSI 11                                                  
+   1 info      RFALSI  4                                                  
+
+$$INPU 26 lines in following table of input changes:
+CHOMIT(8)=Gua                                                             
+CHOMIT(7)=-CrCH2                                                          
+CHOMIT(6)=Lip20                                                           
+CHOMIT(5)=Lip09                                                           
+CHOMIT(4)=Lip13d                                                          
+CHOMIT(3)=Lip13c                                                          
+CHOMIT(2)=Lip13b                                                          
+CHOMIT(1)=Lip13a                                                          
+NOMIT=8                                                                   
+NAMREL=NAA                                                                
+nratio=0                                                                  
+ltable=7                                                                  
+filtab='c/Users/rayne/PHYS449/Thesis/analyses/set                         
+   up_1/TV-W_f/accel_2/Axial_slice_51-60/lcm/3_8.                         
+   table'                                                                 
+filps='c/Users/rayne/PHYS449/Thesis/analyses/setu                         
+   p_1/TV-W_f/accel_2/Axial_slice_51-60/lcm/3_8.p                         
+   s'                                                                     
+filraw='c/Users/rayne/PHYS449/Thesis/analyses/set                         
+   up_1/TV-W_f/accel_2/Axial_slice_51-60/lcm/3_8.                         
+   RAW'                                                                   
+filbas='c/Users/rayne/PHYS449/Thesis/simulations/                         
+   setup_1/basis/basis.basis'                                             
+hzpppm=127.731000                                                         
+deltat=0.000500                                                           
+nunfil=1024                                                               

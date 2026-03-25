@@ -2,27 +2,27 @@ clear;
 addpath(genpath('../FID-A-master'));
 accel = 2;
 rc_params = struct();
-rc_params.rho = [1];
-rc_params.ptol = [1e-3];
-rc_params.dtol = [1e-3];
-rc_params.mu = [10];
-rc_params.gu = [2];
-rc_params.gl = [2];
-rc_params.verbose = true;
+rc_params.rho = [1,1];
+rc_params.ptol = [1e-3,1e-3];
+rc_params.dtol = [1e-3,1e-3];
+rc_params.mu = [10,10];
+rc_params.gu = [2,2];
+rc_params.gl = [2,2];
+rc_params.verbose = false;
 data_paths = {...
-    'C:\Users\rayne\PHYS449\Thesis\simulations\setup_2\Axial\Axial_slice_51-60', ...
-    'C:\Users\rayne\PHYS449\Thesis\simulations\setup_2\Coronal\Coronal_slice_21-30', ...
-    'C:\Users\rayne\PHYS449\Thesis\simulations\setup_2\Sagittal\Sagittal_slice_41-50', ...
-    'C:\Users\rayne\PHYS449\Thesis\simulations\setup_2\Axial\Axial_slice_21-30', ...
-    'C:\Users\rayne\PHYS449\Thesis\simulations\setup_2\Coronal\Coronal_slice_1-10', ...
-    'C:\Users\rayne\PHYS449\Thesis\simulations\setup_2\Sagittal\Sagittal_slice_1-10', ...
+    'C:\Users\rayne\PHYS449\Thesis\simulations\setup_1\Axial\Axial_slice_51-60', ...
+    'C:\Users\rayne\PHYS449\Thesis\simulations\setup_1\Coronal\Coronal_slice_21-30', ...
+    'C:\Users\rayne\PHYS449\Thesis\simulations\setup_1\Sagittal\Sagittal_slice_41-50', ...
+    'C:\Users\rayne\PHYS449\Thesis\simulations\setup_1\Axial\Axial_slice_21-30', ...
+    'C:\Users\rayne\PHYS449\Thesis\simulations\setup_1\Coronal\Coronal_slice_1-10', ...
+    'C:\Users\rayne\PHYS449\Thesis\simulations\setup_1\Sagittal\Sagittal_slice_1-10', ...
 };
 dwtmode('per','nodisp');
 dwtmode;
-method = @dwt1;
-method_name = 'W_f';
+method = @tv_dwt;
+method_name = 'TV-W_f';
 analyses_path = fullfile(pwd,'analyses');
-setup = 'setup_2';
+setup = 'setup_1';
 basis_path = fullfile(pwd,'simulations',setup,'basis','basis.basis');
 setup_path = fullfile(analyses_path, setup);
 method_path = fullfile(setup_path, method_name);
@@ -96,6 +96,7 @@ for idx = 1:numel(data_paths)
             result.snrs(nx,ny) = out.SNR;
             result.concs(nx,ny,:) = cellfun(@(a) out.(a), cellstr(mfields));
             result.dconcs(nx,ny,:) = cellfun(@(a) out.(a), cellstr(dmfields));
+            disp(result);
         end
     end
     result.K = Krc;

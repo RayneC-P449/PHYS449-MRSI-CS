@@ -1,8 +1,7 @@
 clear;
 addpath(genpath('../FID-A-master'));
 accel = 2;
-full_name = "full";
-method_name = 'W_f';
+method_name = 'HKM';
 analyses_path = fullfile(pwd,'analyses');
 setup = 'setup_1';
 method_path = fullfile(analyses_path, setup, method_name, sprintf('accel_%d',accel));
@@ -27,8 +26,8 @@ for k = 1:numel(data_folders)
         
         conc_err = abs(full_conc - method_conc);
         conc_err = mean(conc_err,'all');
-        disp(conc_err);
-        % disp(method_result.nrmse);
+        % disp(conc_err);
+        disp(method_result.nrmse);
         
     end
 end
